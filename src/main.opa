@@ -80,12 +80,19 @@ broadcast(author) =
  *
  * @return The user interface, ready to be sent by the server to the client on connection.
  */
-start() =
-   author = Random.string(8)
+launch(author) =
    <div id=#header><div id=#logo></div></div>
    <div id=#conversation onready={_ -> Network.add_callback(user_update, room)}></div>
    <input id=#entry  onnewline={_ -> broadcast(author)}/>
-   <div class="button" onclick={_ -> broadcast(author)}>Send!</div>
+   <div class="button" onclick={_ -> broadcast(author)}>Send</div>
+
+start() =
+   go(ev) = Dom.transform([#main <- launch(Dom.get_value(#author))])
+   <div id=#main>
+   <div id=#header><div id=#logo></div>Choose your name:</div>
+   <input id=#author onnewline={go}/>
+   <div class="button" onclick={go}>Launch</div>
+   </div>
 
 /**
  * {1 Application}
