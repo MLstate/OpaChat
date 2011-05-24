@@ -22,6 +22,8 @@
  * @author David Rajchenbach-Teller, David@opalang.org
  */
 
+import stdlib.date
+
 /**
  * {1 Network infrastructure}
  */
@@ -30,7 +32,9 @@
  * The type of messages sent by a client to the chatroom
  */
 type message = {author: string /**The name of the author (arbitrary string)*/
-               ; text: string  /**Content entered by the user*/}
+               ; text: string  /**Content entered by the user*/
+               ; date: Date.date
+               }
 
 /**
  * The chatroom.
@@ -51,8 +55,9 @@ room = Network.cloud("room"): Network.network(message)
  */
 user_update(x: message) =
   line = <div class="line">
-            <div class="user">{x.author}:</div>
-            <div class="message">{x.text}</div>
+            <span class="date">{Date.to_string_time_only(x.date)}</span>
+            <span class="user">{x.author}:</span>
+            <span class="message">{x.text}</span>
          </div>
   do Dom.transform([#conversation +<- line ])
   Dom.scroll_to_bottom(#conversation)
@@ -65,7 +70,7 @@ user_update(x: message) =
  * @param author The name of the author. Will be included in the message broadcasted.
  */
 broadcast(author) =
-   do Network.broadcast({~author text=Dom.get_value(#entry)}, room)
+   do Network.broadcast({~author text=Dom.get_value(#entry) date=Date.now()}, room)
    Dom.clear_value(#entry)
 
 /**
