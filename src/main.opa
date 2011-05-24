@@ -22,7 +22,7 @@
  * @author David Rajchenbach-Teller, David@opalang.org
  */
 
-import stdlib.date
+import stdlib.{date}
 
 /**
  * {1 Network infrastructure}
@@ -35,6 +35,8 @@ type message = {author: string /**The name of the author (arbitrary string)*/
                ; text: string  /**Content entered by the user*/
                ; date: Date.date
                }
+
+db /history : list(message)
 
 /**
  * The chatroom.
@@ -70,7 +72,9 @@ user_update(x: message) =
  * @param author The name of the author. Will be included in the message broadcasted.
  */
 broadcast(author) =
-   do Network.broadcast({~author text=Dom.get_value(#entry) date=Date.now()}, room)
+   message = {~author text=Dom.get_value(#entry) date=Date.now()}
+   do Network.broadcast(message, room)
+   do /history <- [message | /history]
    Dom.clear_value(#entry)
 
 /**
@@ -81,8 +85,13 @@ broadcast(author) =
  * @return The user interface, ready to be sent by the server to the client on connection.
  */
 launch(author) =
+   init_client() =
+     // iter = Iter.of_list(/history)
+     history = List.take(20, /history)
+     do List.iter(user_update, history)
+     Network.add_callback(user_update, room)
    <div id=#header><div id=#logo></div></div>
-   <div id=#conversation onready={_ -> Network.add_callback(user_update, room)}></div>
+   <div id=#conversation onready={_ -> init_client()}></div>
    <input id=#entry  onnewline={_ -> broadcast(author)}/>
    <div class="button" onclick={_ -> broadcast(author)}>Send</div>
 
