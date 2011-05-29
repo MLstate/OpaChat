@@ -44,7 +44,7 @@ broadcast(author, text) =
 
 launch(author) =
    init_client() =
-     history = List.take(20, /history)
+     history = List.rev(List.take(20, /history))
      do List.iter(user_update, history)
      Network.add_callback(user_update, room)
    send_message() =
