@@ -18,9 +18,9 @@
 
 import stdlib.{date}
 
-type message = { author: string /**The name of the author (arbitrary string)*/
-               ; text: string  /**Content entered by the user*/
-               ; date: Date.date
+type message = { author : string
+               ; text : string
+               ; date : Date.date
                }
 
 db /history : list(message)
@@ -65,9 +65,9 @@ start() =
      do Dom.transform([#main <- launch(author)])
      broadcast("System", "{author} is connected to the room")
    <div id=#main>
-   <div id=#header><div id=#logo></div>Choose your name:</div>
-   <input id=#author onnewline={go}/>
-   <div class="button" onclick={go}>Launch</div>
+     <div id=#header><div id=#logo></div>Choose your name:</div>
+     <input id=#author onnewline={go}/>
+     <div class="button" onclick={go}>Launch</div>
    </div>
 
 server = Server.one_page_bundle("Chat",
