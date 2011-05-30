@@ -17,8 +17,8 @@
 */
 
 import stdlib.{date}
-
-type message = { author : string
+type author = { system } / { author : string }
+type message = { author : author
                ; text : string
                ; date : Date.date
                }
@@ -30,7 +30,9 @@ room = Network.cloud("room") : Network.network(message)
 user_update(x: message) =
   line = <div class="line">
             <span class="date">{Date.to_string_time_only(x.date)}</span>
-            <span class="user">{x.author}</span>
+            { match x.author with
+              | {system} -> <span class="system"/>
+              | {~author} -> <span class="user">{author}</span> }
             <span class="message">{x.text}</span>
          </div>
   do Dom.transform([#conversation +<- line ])
@@ -48,9 +50,9 @@ launch(author) =
      do List.iter(user_update, history)
      Network.add_callback(user_update, room)
    send_message() =
-     broadcast(author, Dom.get_value(#entry))
+     broadcast({~author}, Dom.get_value(#entry))
    logout() =
-     do broadcast("System", "{author} has left the room")
+     do broadcast({system}, "{author} has left the room")
      Dom.transform([#main <- <a class="button" href="/">Reconnect</a>])
    <div id=#header><div id=#logo></div>
      <div class="button" onclick={_ -> logout()}>Logout</div>
@@ -63,7 +65,7 @@ start() =
    go(_) = 
      author = Dom.get_value(#author)
      do Dom.transform([#main <- launch(author)])
-     broadcast("System", "{author} is connected to the room")
+     broadcast({system}, "{author} is connected to the room")
    <div id=#main>
      <div id=#header><div id=#logo></div>Choose your name:</div>
      <input id=#author onnewline={go}/>
