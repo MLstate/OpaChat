@@ -17,10 +17,12 @@
 */
 
 import stdlib.{date}
+
 type author = { system } / { author : string }
 type message = { author : author
                ; text : string
                ; date : Date.date
+               ; event : string
                }
 
 db /history : list(message)
@@ -28,7 +30,7 @@ db /history : list(message)
 room = Network.cloud("room") : Network.network(message)
 
 user_update(x: message) =
-  line = <div class="line">
+  line = <div class="line {x.event}">
             <span class="date">{Date.to_string_time_only(x.date)}</span>
             { match x.author with
               | {system} -> <span class="system"/>
@@ -36,13 +38,17 @@ user_update(x: message) =
             <span class="message">{x.text}</span>
          </div>
   do Dom.transform([#conversation +<- line])
-  Dom.scroll_to_bottom(#conversation)
+  Dom.scroll_to_bottom(Dom.select_body())
 
-broadcast(author, text) =
-   message = {~author ~text date=Date.now()}
+broadcast(author, class, text) =
+   message = {~author ~text date=Date.now() event=class}
    do Network.broadcast(message, room)
    do /history <- [message | /history]
    Dom.clear_value(#entry)
+
+build_page(header, content) =
+   <div id=#header><div id=#logo/>{header}</div>
+   <div id=#content>{content}</div>
 
 launch(author) =
    init_client() =
@@ -50,27 +56,31 @@ launch(author) =
      do List.iter(user_update, history)
      Network.add_callback(user_update, room)
    send_message() =
-     broadcast({~author}, Dom.get_value(#entry))
+     broadcast({~author}, "", Dom.get_value(#entry))
    logout() =
-     do broadcast({system}, "{author} has left the room")
+     do broadcast({system}, "leave", "{author} has left the room")
      Client.goto("/")
-   <div id=#header><div id=#logo></div>
-     <div class="button" onclick={_ -> logout()}>Logout</div>
-   </div>
-   <div id=#conversation onready={_ -> init_client()}></div>
-   <input id=#entry  onnewline={_ -> send_message()}/>
-   <div class="button" onclick={_ -> send_message()}>Send</div>
+   build_page(
+     <a class="button github" href="https://github.com/Aqua-Ye/OpaChat" target="_blank">Fork me on GitHub !</a>
+     <span class="button" onclick={_ -> logout()}>Logout</span>,
+     <div id=#conversation onready={_ -> init_client()}></div>
+     <div id=#chatbar>
+       <input id=#entry  onnewline={_ -> send_message()}/>
+       <span class="button" onclick={_ -> send_message()}>Send</span>
+     </div>
+   ) |> Xhtml.add_onready(_ -> Dom.give_focus(#entry), _)
 
 start() =
    go(_) =
      author = Dom.get_value(#author)
      do Dom.transform([#main <- launch(author)])
-     broadcast({system}, "{author} is connected to the room")
-   <div id=#main>
-     <div id=#header><div id=#logo></div>Choose your name:</div>
-     <input id=#author onnewline={go}/>
-     <div class="button" onclick={go}>Launch</div>
-   </div>
+     broadcast({system}, "join", "{author} is connected to the room")
+   <div id=#main>{
+     build_page(<></>,
+       <span>Choose your name: </span><input id=#author onnewline={go}/>
+       <span class="button" onclick={go}>Join</span>
+     )
+   }</div> |> Xhtml.add_onready(_ -> Dom.give_focus(#author), _)
 
 server = Server.one_page_bundle("Chat",
        [@static_resource_directory("resources")],
