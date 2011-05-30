@@ -35,7 +35,7 @@ user_update(x: message) =
               | {~author} -> <span class="user">{author}</span> }
             <span class="message">{x.text}</span>
          </div>
-  do Dom.transform([#conversation +<- line ])
+  do Dom.transform([#conversation +<- line])
   Dom.scroll_to_bottom(#conversation)
 
 broadcast(author, text) =
@@ -62,7 +62,7 @@ launch(author) =
    <div class="button" onclick={_ -> send_message()}>Send</div>
 
 start() =
-   go(_) = 
+   go(_) =
      author = Dom.get_value(#author)
      do Dom.transform([#main <- launch(author)])
      broadcast({system}, "{author} is connected to the room")
