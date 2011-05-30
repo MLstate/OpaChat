@@ -53,7 +53,7 @@ launch(author) =
      broadcast({~author}, Dom.get_value(#entry))
    logout() =
      do broadcast({system}, "{author} has left the room")
-     Dom.transform([#main <- <a class="button" href="/">Reconnect</a>])
+     Client.goto("/")
    <div id=#header><div id=#logo></div>
      <div class="button" onclick={_ -> logout()}>Logout</div>
    </div>
