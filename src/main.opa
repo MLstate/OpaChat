@@ -72,7 +72,7 @@ send_message(broadcast) =
   _ = broadcast("", Dom.get_value(#entry))
   Dom.clear_value(#entry)
 
-launch(author:author) =
+launch(author:string) =
   init_client() =
     history_list = IntMap.To.val_list(/history)
     len = List.length(history_list)
@@ -83,7 +83,7 @@ launch(author:author) =
    logout() =
      do broadcast({system}, "leave", "{author} has left the room")
      Client.goto("/")
-   do_broadcast = broadcast(author, _, _)
+   do_broadcast = broadcast({author=author}, _, _)
    build_page(
      <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
      <span class="button" onclick={_ -> logout()}>Logout</span>,
@@ -98,7 +98,7 @@ launch(author:author) =
 load(broadcast) =
   author = Dom.get_value(#author)
   do Dom.transform([#main <- <>Loading...</>])
-  do Dom.transform([#main <- launch(~{author})])
+  do Dom.transform([#main <- launch(author)])
   broadcast("join", "{author} is connected to the room")
 
 start() =
