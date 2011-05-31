@@ -32,6 +32,8 @@ db /history : intmap(message)
 
 room = Network.cloud("room") : Network.network(message)
 
+update_stats() = void
+
 @client
 user_update(x: message) =
   line = <div class="line {x.event}">
@@ -76,6 +78,7 @@ launch(author:author) =
      <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
      <span class="button" onclick={_ -> logout()}>Logout</span>,
      <div id=#conversation onready={_ -> init_client()}/>
+     <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
      <div id=#chatbar onready={_ -> Dom.give_focus(#entry)}>
        <input id=#entry onnewline={_ -> send_message(do_broadcast)}/>
        <span class="button" onclick={_ -> send_message(do_broadcast)}>Send</span>
