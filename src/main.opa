@@ -34,14 +34,18 @@ room = Network.cloud("room") : Network.network(message)
 
 launch_date = Date.now()
 
-update_stats() =
+get_memory_usage = %%c_binding.get_memory_usage%%
+
+update_stats(mem) =
   uptime_duration = Date.between(launch_date, Date.now())
   uptime = Date.of_duration(uptime_duration)
   uptime = Date.shift_backward(uptime, Date.to_duration(Date.milliseconds(3600000))) // 1 hour shift
-  Dom.transform([#uptime <- <>Uptime: {Date.to_string_time_only(uptime)}</>])
+  do Dom.transform([#uptime <- <>Uptime: {Date.to_string_time_only(uptime)}</>])
+  do Dom.transform([#memory <- <>Memory: {mem} Mo</>])
+  void
 
 @client
-user_update(x: message) =
+user_update(mem:int)(x: message) =
   line = <div class="line {x.event}">
             <span class="date">{Date.to_string_time_only(x.date)}</span>
             { match x.author with
@@ -51,13 +55,12 @@ user_update(x: message) =
          </div>
   do Dom.transform([#conversation +<- line])
   do Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
-  do update_stats()
+  do update_stats(mem)
   void
 
 broadcast(author, event, text) =
   message = {~author ~text date=Date.now() ~event}
   do /history[?] <- message
-  //do /history <- [message | /history]
   Network.broadcast(message, room)
 
 build_page(header, content) =
@@ -75,8 +78,8 @@ launch(author:author) =
     len = List.length(history_list)
     history = List.drop(len-20, history_list)
     // FIXME: optimize this...
-    do List.iter(user_update, history)
-    Network.add_callback(user_update, room)
+    do List.iter(user_update(get_memory_usage()), history)
+    Network.add_callback(user_update(get_memory_usage()), room)
    logout() =
      do broadcast({system}, "leave", "{author} has left the room")
      Client.goto("/")
@@ -85,7 +88,7 @@ launch(author:author) =
      <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
      <span class="button" onclick={_ -> logout()}>Logout</span>,
      <div id=#conversation onready={_ -> init_client()}/>
-     <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
+     <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
      <div id=#chatbar onready={_ -> Dom.give_focus(#entry)}>
        <input id=#entry onnewline={_ -> send_message(do_broadcast)}/>
        <span class="button" onclick={_ -> send_message(do_broadcast)}>Send</span>
