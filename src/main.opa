@@ -62,7 +62,9 @@ send_message(broadcast) =
 
 launch(author:author) =
   init_client() =
-    history = List.rev(List.take(20, List.rev(IntMap.To.val_list(/history))))
+    history_list = IntMap.To.val_list(/history)
+    len = List.length(history_list)
+    history = List.drop(len-20, history_list)
     // FIXME: optimize this...
     do List.iter(user_update, history)
     Network.add_callback(user_update, room)
