@@ -32,6 +32,7 @@ db /history : list(message)
 
 room = Network.cloud("room") : Network.network(message)
 
+@client
 user_update(x: message) =
   line = <div class="line {x.event}">
             <span class="date">{Date.to_string_time_only(x.date)}</span>
@@ -43,48 +44,53 @@ user_update(x: message) =
   do Dom.transform([#conversation +<- line])
   Dom.scroll_to_bottom(Dom.select_body())
 
-broadcast(author, class, text) =
-  message = {~author ~text date=Date.now() event=class}
-  do Network.broadcast(message, room)
+broadcast(author, event, text) =
+  message = {~author ~text date=Date.now() ~event}
   do /history <- [message | /history]
-  Dom.clear_value(#entry)
+  Network.broadcast(message, room)
 
 build_page(header, content) =
   <div id=#header><div id=#logo/>{header}</div>
   <div id=#content>{content}</div>
 
-launch(author) =
+@client
+send_message(broadcast) =
+  _ = broadcast("", Dom.get_value(#entry))
+  Dom.clear_value(#entry)
+
+launch(author:author) =
   init_client() =
     history = List.rev(List.take(20, /history))
     // FIXME: optimize this...
-    do List.iter(user_update, history)
+    //do List.iter(user_update, history)
     Network.add_callback(user_update, room)
-   send_message() =
-     broadcast({~author}, "", Dom.get_value(#entry))
    logout() =
      do broadcast({system}, "leave", "{author} has left the room")
      Client.goto("/")
+   do_broadcast = broadcast(author, _, _)
    build_page(
      <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
      <span class="button" onclick={_ -> logout()}>Logout</span>,
      <div id=#conversation onready={_ -> init_client()}/>
      <div id=#chatbar>
-       <input id=#entry onnewline={_ -> send_message()}/>
-       <span class="button" onclick={_ -> send_message()}>Send</span>
+       <input id=#entry onnewline={_ -> send_message(do_broadcast)}/>
+       <span class="button" onclick={_ -> send_message(do_broadcast)}>Send</span>
      </div>
    ) |> Xhtml.add_onready(_ -> Dom.give_focus(#entry), _)
 
+load(broadcast) =
+  do Dom.transform([#main <- <>Loading...</>])
+  author = Dom.get_value(#author)
+  do Dom.transform([#main <- launch(~{author})])
+  broadcast("join", "{author} is connected to the room")
+
 start() =
-   go(_) =
-     do Dom.transform([#main <- <>Loading...</>])
-     author = Dom.get_value(#author)
-     do Dom.transform([#main <- launch(author)])
-     broadcast({system}, "join", "{author} is connected to the room")
    <div id=#main>{
      build_page(
        <></>,
-       <span>Choose your name: </span><input id=#author onnewline={go}/>
-       <span class="button" onclick={go}>Join</span>
+       <span>Choose your name: </span>
+       <input id=#author onnewline={_ -> load(broadcast({system}, _, _))}/>
+       <span class="button" onclick={_ -> load(broadcast({system}, _, _))}>Join</span>
      )
    }</div> |> Xhtml.add_onready(_ -> Dom.give_focus(#author), _)
 
