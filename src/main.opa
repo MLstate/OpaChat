@@ -32,7 +32,13 @@ db /history : intmap(message)
 
 room = Network.cloud("room") : Network.network(message)
 
-update_stats() = void
+launch_date = Date.now()
+
+update_stats() =
+  uptime_duration = Date.between(launch_date, Date.now())
+  uptime = Date.of_duration(uptime_duration)
+  uptime = Date.shift_backward(uptime, Date.to_duration(Date.milliseconds(3600000))) // 1 hour shift
+  Dom.transform([#uptime <- <>Uptime: {Date.to_string_time_only(uptime)}</>])
 
 @client
 user_update(x: message) =
@@ -45,6 +51,7 @@ user_update(x: message) =
          </div>
   do Dom.transform([#conversation +<- line])
   do Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
+  do update_stats()
   void
 
 broadcast(author, event, text) =
