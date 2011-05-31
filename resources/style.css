@@ -255,16 +255,19 @@ pre {
 
 #chatbar {
      position: fixed;
+     left: 0px;
      bottom: 0px;
      width: 100%;
      height: 30px;
+     background: #F2F2ED;
 }
 
 #chatbar input#entry {
      position: absolute;
      left: 0px;
-     right: 75px;
+     right: 0px;
      height: 30px;
+     width: 100%;
 }
 
 #chatbar span.button {

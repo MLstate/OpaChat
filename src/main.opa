@@ -28,7 +28,7 @@ type message = {
 
 github_url = "https://github.com/Aqua-Ye/OpaChat"
 
-db /history : list(message)
+db /history : intmap(message)
 
 room = Network.cloud("room") : Network.network(message)
 
@@ -46,7 +46,8 @@ user_update(x: message) =
 
 broadcast(author, event, text) =
   message = {~author ~text date=Date.now() ~event}
-  do /history <- [message | /history]
+  do /history[?] <- message
+  //do /history <- [message | /history]
   Network.broadcast(message, room)
 
 build_page(header, content) =
@@ -60,9 +61,9 @@ send_message(broadcast) =
 
 launch(author:author) =
   init_client() =
-    history = List.rev(List.take(20, /history))
+    history = List.rev(List.take(20, List.rev(IntMap.To.val_list(/history))))
     // FIXME: optimize this...
-    //do List.iter(user_update, history)
+    do List.iter(user_update, history)
     Network.add_callback(user_update, room)
    logout() =
      do broadcast({system}, "leave", "{author} has left the room")
@@ -72,27 +73,27 @@ launch(author:author) =
      <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
      <span class="button" onclick={_ -> logout()}>Logout</span>,
      <div id=#conversation onready={_ -> init_client()}/>
-     <div id=#chatbar>
+     <div id=#chatbar onready={_ -> Dom.give_focus(#entry)}>
        <input id=#entry onnewline={_ -> send_message(do_broadcast)}/>
        <span class="button" onclick={_ -> send_message(do_broadcast)}>Send</span>
      </div>
-   ) |> Xhtml.add_onready(_ -> Dom.give_focus(#entry), _)
+   )
 
 load(broadcast) =
-  do Dom.transform([#main <- <>Loading...</>])
   author = Dom.get_value(#author)
+  do Dom.transform([#main <- <>Loading...</>])
   do Dom.transform([#main <- launch(~{author})])
   broadcast("join", "{author} is connected to the room")
 
 start() =
-   <div id=#main>{
+   <div id=#main onready={_ -> Dom.give_focus(#author)}>{
      build_page(
        <></>,
        <span>Choose your name: </span>
        <input id=#author onnewline={_ -> load(broadcast({system}, _, _))}/>
        <span class="button" onclick={_ -> load(broadcast({system}, _, _))}>Join</span>
      )
-   }</div> |> Xhtml.add_onready(_ -> Dom.give_focus(#author), _)
+   }</div>
 
 server = Server.one_page_bundle("Chat",
        [@static_resource_directory("resources")],
