@@ -42,7 +42,8 @@ user_update(x: message) =
             <span class="message">{x.text}</span>
          </div>
   do Dom.transform([#conversation +<- line])
-  Dom.scroll_to_bottom(Dom.select_body())
+  do Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
+  void
 
 broadcast(author, event, text) =
   message = {~author ~text date=Date.now() ~event}
