@@ -78,8 +78,8 @@ launch(author:string) =
     len = List.length(history_list)
     history = List.drop(len-20, history_list)
     // FIXME: optimize this...
-    do List.iter(user_update(get_memory_usage()), history)
-    Network.add_callback(user_update(get_memory_usage()), room)
+    do List.iter(user_update(get_memory_usage()/(1024*1024)), history)
+    Network.add_callback(user_update(get_memory_usage()/(1024*1024)), room)
    logout() =
      do broadcast({system}, "leave", "{author} has left the room")
      Client.goto("/")

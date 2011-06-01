@@ -4,12 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int usage() {
+long usage() {
   int who = RUSAGE_SELF;
   struct rusage usage;
   struct rusage *p = &usage;
   getrusage(who, p);
-  return (p->ru_maxrss / (1024*1024));
+  return p->ru_maxrss;
 }
 
 #include <errno.h>
@@ -21,5 +21,5 @@ int usage() {
 
 value get_memory_usage() {
   CAMLparam0();
-  CAMLreturn(Val_int(usage()));
+  CAMLreturn(Val_long(usage()));
 }
