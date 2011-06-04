@@ -57,8 +57,7 @@ manage_users(user_list : stringmap(Date.date), action : users_action) =
                         do Network.broadcast({users = newmap}, room)
                         {set = newmap}
 
-   | {clean} ->         do Debug.jlog("clean")
-                        newmap = Map.fold(clean, user_list, Map.empty)
+   | {clean} ->         newmap = Map.fold(clean, user_list, Map.empty)
                         do Network.broadcast({users = newmap}, room)
                         {set = newmap}
 
