@@ -19,7 +19,7 @@
 import stdlib.{date}
 
 type user = string
-type users_action = {add : user} / {remove : user} / { broadcast } / {ping}
+type users_action = {add : user} / {remove : user} / { clean } / {ping : user}
 
 type author = { system } / { author : string }
 type message = {
@@ -28,7 +28,7 @@ type message = {
   date : Date.date;
   event : string;
 }
-type msg = {message : message} / {users : list(user)}
+type msg = {message : message} / {users : stringmap(Date.date)}
 
 github_url = "https://github.com/Aqua-Ye/OpaChat"
 
@@ -36,26 +36,38 @@ db /history : intmap(message)
 
 room = Network.cloud("room") : Network.network(msg)
 
-manage_users(user_list : list(user), action : users_action) =
-  ping()=
-    do Debug.jlog("ping not implemented yet")
-    {unchanged}
+manage_users(user_list : stringmap(Date.date), action : users_action) =
+  clean(key, value, acc) =
+    time = Duration.in_seconds(Duration.between(value, Date.now()))
+    if time > 20. then 
+       do broadcast({system}, "leave", "{key} has left the room (timeout)")
+       acc
+    else
+       Map.add(key, value, acc)
+       
+
   match action with
-   | {add = u} ->       do broadcast({system}, "join", "{u} is connected to the room")
-                        {set = List.cons(u, user_list)}
+   | {add = u} ->       newmap = Map.add(u, Date.now(),user_list)
+                        do broadcast({system}, "join", "{u} is connected to the room")
+                        do Network.broadcast({users = newmap}, room)
+                        {set = newmap}
 
-   | {remove = u} ->    do broadcast({system}, "leave", "{u} has left the room")
-                        {set = List.remove(u, user_list)}
+   | {remove = u} ->    newmap = Map.remove(u, user_list)
+                        do broadcast({system}, "leave", "{u} has left the room (quit)")
+                        do Network.broadcast({users = newmap}, room)
+                        {set = newmap}
 
-   | {broadcast} ->     do Network.broadcast({users = user_list}, room)
-                        {unchanged}
+   | {clean} ->         do Debug.jlog("clean")
+                        newmap = Map.fold(clean, user_list, Map.empty)
+                        do Network.broadcast({users = newmap}, room)
+                        {set = newmap}
 
-   | {ping} ->          ping()
+   | {ping = u} ->      temp = Map.remove(u, user_list)
+                        {set = Map.add(u, Date.now(), temp)}
 
-users = Session.cloud("users", List.empty, manage_users)
+users = Session.cloud("users", Map.empty, manage_users)
 
-// Fix-me : to be improved
-do Scheduler.timer(1000, ( -> Session.send(users, {broadcast})))
+do Scheduler.timer(10000, ( -> Session.send(users, {clean})))
 
 launch_date = Date.now()
 
@@ -70,7 +82,8 @@ update_stats(mem) =
   void
 
 @client
-user_update(mem:int)(msg: msg) =
+user_update(mem:int)(msg: msg) =  
+do update_stats(mem)
 match msg with
  | {message = x} ->
   line = <div class="line {x.event}">
@@ -82,9 +95,8 @@ match msg with
          </div>
   do Dom.transform([#conversation +<- line])
   do Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
-  do update_stats(mem)
   void
- | ~{users} -> list = List.fold((elt, acc -> <>{acc}<li>{elt}</li></>), users, <></>)
+ | ~{users} -> list = Map.fold((elt, _, acc -> <>{acc}<li>{elt}</li></>), users, <></>)
                Dom.transform([#user_list <- <ul>{list}</ul>])
 
 broadcast(author, event, text) =
@@ -101,9 +113,14 @@ send_message(broadcast) =
   _ = broadcast("", Dom.get_value(#entry))
   Dom.clear_value(#entry)
 
+@client
+ping(fun)=
+  Scheduler.timer(15000, fun)
+
 launch(author:string) =
   init_client() =
     do Session.send(users, {add=author})
+    do ping( -> Session.send(users, {ping=author}))
     history_list = IntMap.To.val_list(/history)
     len = List.length(history_list)
     history = List.drop(len-20, history_list)
@@ -116,8 +133,8 @@ launch(author:string) =
    do_broadcast = broadcast({author=author}, _, _)
    build_page(
      <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
-     <span class="button" onclick={_ -> logout()}>Logout</span>,
-     <div id=#conversation onready={_ -> init_client()}/>
+     <span class="button" onclick={_ -> logout()}>Logout</span>, 
+     <div id=#conversation onready={_ -> init_client()}/>    
      <div id=#user_list />
      <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
      <div id=#chatbar onready={_ -> Dom.give_focus(#entry)}>
