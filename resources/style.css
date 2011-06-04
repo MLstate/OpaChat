@@ -221,9 +221,10 @@ pre {
 /***Conversation***/
 
 #conversation {
+     float: left;
      background: none repeat scroll 0% 0% transparent;
      overflow: auto;
-     width: 100%;
+     width: 80%;
      margin-bottom: 60px;
 }
 
@@ -282,4 +283,16 @@ pre {
      right: 0px;
      width: 55px;
      margin: 2px 5px;
+}
+
+/***User list***/
+
+#user_list {
+     position: fixed;
+     top: 50px;
+     right: 0px;
+     float: right;
+     overflow: auto;
+     width: 20%;
+     margin-bottom: 60px;
 }

@@ -18,6 +18,9 @@
 
 import stdlib.{date}
 
+type user = string
+type users_action = {add : user} / {remove : user} / { broadcast } / {ping}
+
 type author = { system } / { author : string }
 type message = {
   author : author;
@@ -25,12 +28,34 @@ type message = {
   date : Date.date;
   event : string;
 }
+type msg = {message : message} / {users : list(user)}
 
 github_url = "https://github.com/Aqua-Ye/OpaChat"
 
 db /history : intmap(message)
 
-room = Network.cloud("room") : Network.network(message)
+room = Network.cloud("room") : Network.network(msg)
+
+manage_users(user_list : list(user), action : users_action) =
+  ping()=
+    do Debug.jlog("ping not implemented yet")
+    {unchanged}
+  match action with
+   | {add = u} ->       do broadcast({system}, "join", "{u} is connected to the room")
+                        {set = List.cons(u, user_list)}
+
+   | {remove = u} ->    do broadcast({system}, "leave", "{u} has left the room")
+                        {set = List.remove(u, user_list)}
+
+   | {broadcast} ->     do Network.broadcast({users = user_list}, room)
+                        {unchanged}
+
+   | {ping} ->          ping()
+
+users = Session.cloud("users", List.empty, manage_users)
+
+// Fix-me : to be improved
+do Scheduler.timer(1000, ( -> Session.send(users, {broadcast})))
 
 launch_date = Date.now()
 
@@ -45,7 +70,9 @@ update_stats(mem) =
   void
 
 @client
-user_update(mem:int)(x: message) =
+user_update(mem:int)(msg: msg) =
+match msg with
+ | {message = x} ->
   line = <div class="line {x.event}">
             <span class="date">{Date.to_string_time_only(x.date)}</span>
             { match x.author with
@@ -57,11 +84,13 @@ user_update(mem:int)(x: message) =
   do Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
   do update_stats(mem)
   void
+ | ~{users} -> list = List.fold((elt, acc -> <>{acc}<li>{elt}</li></>), users, <></>)
+               Dom.transform([#user_list <- <ul>{list}</ul>])
 
 broadcast(author, event, text) =
   message = {~author ~text date=Date.now() ~event}
   do /history[?] <- message
-  Network.broadcast(message, room)
+  Network.broadcast({message = message}, room)
 
 build_page(header, content) =
   <div id=#header><div id=#logo/>{header}</div>
@@ -74,20 +103,22 @@ send_message(broadcast) =
 
 launch(author:string) =
   init_client() =
+    do Session.send(users, {add=author})
     history_list = IntMap.To.val_list(/history)
     len = List.length(history_list)
     history = List.drop(len-20, history_list)
     // FIXME: optimize this...
-    do List.iter(user_update(get_memory_usage()/(1024*1024)), history)
+    do List.iter( (a -> user_update(get_memory_usage()/(1024*1024))({message = a})) , history)
     Network.add_callback(user_update(get_memory_usage()/(1024*1024)), room)
    logout() =
-     do broadcast({system}, "leave", "{author} has left the room")
+     do Session.send(users, {remove=author})
      Client.goto("/")
    do_broadcast = broadcast({author=author}, _, _)
    build_page(
      <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
      <span class="button" onclick={_ -> logout()}>Logout</span>,
      <div id=#conversation onready={_ -> init_client()}/>
+     <div id=#user_list />
      <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
      <div id=#chatbar onready={_ -> Dom.give_focus(#entry)}>
        <input id=#entry onnewline={_ -> send_message(do_broadcast)}/>
@@ -95,19 +126,18 @@ launch(author:string) =
      </div>
    )
 
-load(broadcast) =
+load() =
   author = Dom.get_value(#author)
   do Dom.transform([#main <- <>Loading...</>])
-  do Dom.transform([#main <- launch(author)])
-  broadcast("join", "{author} is connected to the room")
+  Dom.transform([#main <- launch(author)])
 
 start() =
    <div id=#main onready={_ -> Dom.give_focus(#author)}>{
      build_page(
        <></>,
        <span>Choose your name: </span>
-       <input id=#author onnewline={_ -> load(broadcast({system}, _, _))}/>
-       <span class="button" onclick={_ -> load(broadcast({system}, _, _))}>Join</span>
+       <input id=#author onnewline={_ -> load()}/>
+       <span class="button" onclick={_ -> load()}>Join</span>
      )
    }</div>
 
