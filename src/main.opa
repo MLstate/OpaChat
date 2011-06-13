@@ -39,12 +39,12 @@ room = Network.cloud("room") : Network.network(msg)
 manage_users(user_list : stringmap(Date.date), action : users_action) =
   clean(key, value, acc) =
     time = Duration.in_seconds(Duration.between(value, Date.now()))
-    if time > 20. then 
+    if time > 20. then
        do broadcast({system}, "leave", "{key} has left the room (timeout)")
        acc
     else
        Map.add(key, value, acc)
-       
+
 
   match action with
    | {add = u} ->       newmap = Map.add(u, Date.now(),user_list)
@@ -81,7 +81,7 @@ update_stats(mem) =
   void
 
 @client
-user_update(mem:int)(msg: msg) =  
+user_update(mem:int)(msg: msg) =
 do update_stats(mem)
 match msg with
  | {message = x} ->
@@ -132,8 +132,8 @@ launch(author:string) =
    do_broadcast = broadcast({author=author}, _, _)
    build_page(
      <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
-     <span class="button" onclick={_ -> logout()}>Logout</span>, 
-     <div id=#conversation onready={_ -> init_client()}/>    
+     <span class="button" onclick={_ -> logout()}>Logout</span>,
+     <div id=#conversation onready={_ -> init_client()}/>
      <div id=#user_list />
      <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
      <div id=#chatbar onready={_ -> Dom.give_focus(#entry)}>
