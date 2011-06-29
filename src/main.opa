@@ -16,7 +16,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import stdlib.{date}
+import stdlib.core.date
+import stdlib.web.client
+import stdlib.system
 
 type user = string
 type users_action = {add : user} / {remove : user} / { clean } / {ping : user}
@@ -70,8 +72,6 @@ do Scheduler.timer(10000, ( -> Session.send(users, {clean})))
 
 launch_date = Date.now()
 
-get_memory_usage = %%c_binding.get_memory_usage%%
-
 update_stats(mem) =
   uptime_duration = Date.between(launch_date, Date.now())
   uptime = Date.of_duration(uptime_duration)
@@ -124,8 +124,8 @@ launch(author:string) =
     len = List.length(history_list)
     history = List.drop(len-20, history_list)
     // FIXME: optimize this...
-    do List.iter( (a -> user_update(get_memory_usage()/(1024*1024))({message = a})) , history)
-    Network.add_callback(user_update(get_memory_usage()/(1024*1024)), room)
+    do List.iter( (a -> user_update(System.get_memory_usage()/(1024*1024))({message = a})) , history)
+    Network.add_callback(user_update(System.get_memory_usage()/(1024*1024)), room)
    logout() =
      do Session.send(users, {remove=author})
      Client.goto("/")
