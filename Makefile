@@ -13,4 +13,4 @@ run: all
 	./$(EXE) || exit 0 ## prevent ugly make error 130 :) ##
 
 clean:
-	rm -Rf *.exe _build _tracks *.log
+	rm -Rf *.exe _build _tracks *.log **/#*#
