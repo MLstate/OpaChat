@@ -20,55 +20,57 @@ import stdlib.core.date
 import stdlib.web.client
 import stdlib.system
 
-type user = string
-type users_action = {add : user} / {remove : user} / { clean } / {ping : user}
+GITHUB_URL = "https://github.com/Aqua-Ye/OpaChat"
 
-type author = { system } / { author : string }
+type user = (int, string)
+type author = { system } / { author : user }
 type message = {
-  author : author;
-  text : string;
-  date : Date.date;
-  event : string;
+  author : author
+  text : string
+  date : Date.date
+  event : string
 }
-type msg = {message : message} / {users : stringmap(Date.date)}
-
-github_url = "https://github.com/Aqua-Ye/OpaChat"
+type msg = {message : message} / {connection : user} / {disconnection : user}
 
 db /history : intmap(message)
 
-room = Network.cloud("room") : Network.network(msg)
+@publish room = Network.cloud("room") : Network.network(msg)
 
-manage_users(user_list : stringmap(Date.date), action : users_action) =
-  clean(key, value, acc) =
-    time = Duration.in_seconds(Duration.between(value, Date.now()))
-    if time > 20. then
-       do broadcast({system}, "leave", "{key} has left the room (timeout)")
-       acc
-    else
-       Map.add(key, value, acc)
+// @client
+// ping(fun)=
+//   Scheduler.timer(15000, fun)
+
+// manage_users(user_list : stringmap(Date.date), action : users_action) =
+//   clean(key, value, acc) =
+//     time = Duration.in_seconds(Duration.between(value, Date.now()))
+//     if time > 20. then
+//        do broadcast({system}, "leave", "{key} has left the room (timeout)")
+//        acc
+//     else
+//        Map.add(key, value, acc)
 
 
-  match action with
-   | {add = u} ->       newmap = Map.add(u, Date.now(),user_list)
-                        do broadcast({system}, "join", "{u} is connected to the room")
-                        do Network.broadcast({users = newmap}, room)
-                        {set = newmap}
+//   match action with
+//    | {add = u} ->       newmap = Map.add(u, Date.now(),user_list)
+//                         do broadcast({system}, "join", "{u} is connected to the room")
+//                         do Network.broadcast({users = newmap}, room)
+//                         {set = newmap}
 
-   | {remove = u} ->    newmap = Map.remove(u, user_list)
-                        do broadcast({system}, "leave", "{u} has left the room (quit)")
-                        do Network.broadcast({users = newmap}, room)
-                        {set = newmap}
+//    | {remove = u} ->    newmap = Map.remove(u, user_list)
+//                         do broadcast({system}, "leave", "{u} has left the room (quit)")
+//                         do Network.broadcast({users = newmap}, room)
+//                         {set = newmap}
 
-   | {clean} ->         newmap = Map.fold(clean, user_list, Map.empty)
-                        do Network.broadcast({users = newmap}, room)
-                        {set = newmap}
+//    | {clean} ->         newmap = Map.fold(clean, user_list, Map.empty)
+//                         do Network.broadcast({users = newmap}, room)
+//                         {set = newmap}
 
-   | {ping = u} ->      temp = Map.remove(u, user_list)
-                        {set = Map.add(u, Date.now(), temp)}
+//    | {ping = u} ->      temp = Map.remove(u, user_list)
+//                         {set = Map.add(u, Date.now(), temp)}
 
-users = Session.cloud("users", Map.empty, manage_users)
+// users = Session.cloud("users", Map.empty, manage_users)
 
-do Scheduler.timer(10000, ( -> Session.send(users, {clean})))
+// do Scheduler.timer(10000, ( -> Session.send(users, {clean})))
 
 launch_date = Date.now()
 
@@ -81,30 +83,37 @@ update_stats(mem) =
   void
 
 @client
-user_update(mem:int)(msg: msg) =
-do update_stats(mem)
-match msg with
- | {message = x} ->
-  line = <div class="line {x.event}">
-            <span class="date">{Date.to_string_time_only(x.date)}</span>
-            { match x.author with
-              | {system} -> <span class="system"/>
-              | {~author} -> <span class="user">{author}</span> }
-            <span class="message">{x.text}</span>
-         </div>
-  do Dom.transform([#conversation +<- line])
-  do Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
-  void
- | ~{users} -> list = Map.fold((elt, _, acc -> <>{acc}<li>{elt}</li></>), users, <></>)
-               Dom.transform([#user_list <- <ul>{list}</ul>])
+user_update(mem:int)(msgs:list(msg)) =
+  do update_stats(mem)
+  List.iter(msg->
+    match msg with
+     | {message = x} ->
+      line = <div class="line {x.event}">
+                <span class="date">{Date.to_string_time_only(x.date)}</span>
+                { match x.author with
+                  | {system} -> <span class="system"/>
+                  | {~author} -> <span class="user">{author.f2}</span> }
+                <span class="message">{x.text}</span>
+             </div>
+      do Dom.transform([#conversation +<- line])
+      do Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
+      void
+     _ -> void
+    //  | ~{users} -> list = Map.fold((elt, _, acc -> <>{acc}<li>{elt}</li></>), users, <></>)
+    //                Dom.transform([#user_list <- <ul>{list}</ul>])
+  , msgs)
 
+//@server
 broadcast(author, event, text) =
   message = {~author ~text date=Date.now() ~event}
   do /history[?] <- message
   Network.broadcast({message = message}, room)
 
 build_page(header, content) =
-  <div id=#header><div id=#logo/>{header}</div>
+  <div id=#header>
+    <div id=#logo/>
+    <div>{header}</div>
+  </div>
   <div id=#content>{content}</div>
 
 @client
@@ -112,51 +121,77 @@ send_message(broadcast) =
   _ = broadcast("", Dom.get_value(#entry))
   Dom.clear_value(#entry)
 
+do_logout(user)(_) =
+  _ = Network.broadcast({disconnection=user}, room)
+  //do Session.send(users, {remove=author})
+  Client.goto("/")
+
 @client
-ping(fun)=
-  Scheduler.timer(15000, fun)
+do_broadcast(broadcast)(_) = send_message(broadcast)
 
-launch(author:string) =
-  init_client() =
-    do Session.send(users, {add=author})
-    do ping( -> Session.send(users, {ping=author}))
-    history_list = IntMap.To.val_list(/history)
-    len = List.length(history_list)
-    history = List.drop(len-20, history_list)
-    // FIXME: optimize this...
-    do List.iter( (a -> user_update(System.get_memory_usage()/(1024*1024))({message = a})) , history)
-    Network.add_callback(user_update(System.get_memory_usage()/(1024*1024)), room)
-   logout() =
-     do Session.send(users, {remove=author})
-     Client.goto("/")
-   do_broadcast = broadcast({author=author}, _, _)
-   build_page(
-     <a class="button github" href="{github_url}" target="_blank">Fork me on GitHub !</a>
-     <span class="button" onclick={_ -> logout()}>Logout</span>,
-     <div id=#conversation onready={_ -> init_client()}/>
-     <div id=#user_list />
-     <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
-     <div id=#chatbar onready={_ -> Dom.give_focus(#entry)}>
-       <input id=#entry onnewline={_ -> send_message(do_broadcast)}/>
-       <span class="button" onclick={_ -> send_message(do_broadcast)}>Send</span>
-     </div>
-   )
+@server
+observe(msg) =
+  match msg
+  {connection=user} -> do jlog("connection {user}") void
+  {disconnection=user} -> do jlog("disconnection {user}") void
+  _ -> user_update(System.get_memory_usage()/(1024*1024))([msg])
 
-load() =
-  author = Dom.get_value(#author)
-  do Dom.transform([#main <- <>Loading...</>])
-  Dom.transform([#main <- launch(author)])
+@server
+inform(user)() = do jlog("auto disconnection {user}") void
 
-start() =
-   <div id=#main onready={_ -> Dom.give_focus(#author)}>{
-     build_page(
-       <></>,
-       <span>Choose your name: </span>
-       <input id=#author onnewline={_ -> load()}/>
-       <span class="button" onclick={_ -> load()}>Join</span>
-     )
-   }</div>
+init_client(user) =
+  //do Session.send(users, {add=author})
+  //do ping( -> Session.send(users, {ping=author}))
+  obs = Network.observe_and_inform(observe, inform(user), room)
+  _ = Network.broadcast({connection=user}, room)
+  do Dom.bind_beforeunload_confirmation(_ ->
+    do Network.broadcast({disconnection=user}, room)
+    do Network.unobserve(obs)
+    {none}
+  )
+  history_list = IntMap.To.val_list(/history)
+  len = List.length(history_list)
+  history = List.drop(len-20, history_list)
+  do user_update(0)(List.map(a->{message = a}, history))
+  do update_stats(System.get_memory_usage()/(1024*1024))
+  void
 
-server = Server.one_page_bundle("Chat",
-       [@static_resource_directory("resources")],
-       ["resources/style.css"], start)
+launch_chat(author:string) =
+  user = (Random.int(65536), author)
+  broadcast = broadcast({author=user}, _, _)
+  build_page(
+    <a class="button github" href="{GITHUB_URL}" target="_blank">Fork me on GitHub !</a>
+    <span class="button" onclick={do_logout(user)}>Logout</span>,
+    <div id=#conversation onready={_ -> init_client(user)}/>
+    <div id=#user_list/>
+    <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
+    <div id=#chatbar>
+      <input id=#entry onready={_ -> Dom.give_focus(#entry)} onnewline={do_broadcast(broadcast)}/>
+      <span class="button" onclick={do_broadcast(broadcast)}>Send</span>
+    </div>
+  )
+
+@client
+do_join(launch)(_) =
+  Dom.transform([
+    #main <- <>Loading chat...</>,
+    #main <- launch(Dom.get_value(#author))]
+  )
+
+main() =
+  <div id=#main>{
+    build_page(
+      <h1>Wecome to OpaChat</h1>,
+      <span>Choose your name: </span>
+      <input id=#author onready={_ -> Dom.give_focus(#author)} onnewline={do_join(launch_chat)}/>
+      <span class="button" onclick={do_join(launch_chat)}>Join</span>
+    )
+  }</div>
+
+server =
+  Server.one_page_bundle(
+    "OpaChat - a chat in Opa",
+    [@static_resource_directory("resources")], // include resources directory
+    ["resources/style.css"],
+    main
+  )

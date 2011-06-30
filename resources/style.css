@@ -193,6 +193,10 @@ pre {
      background: #F2F2ED;
 }
 
+#header h1 {
+     text-align: center;
+}
+
 #logo {
      background: url("/resources/opa-logo.png") no-repeat scroll 0 0 transparent;
      height: 41px;

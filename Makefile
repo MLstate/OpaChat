@@ -1,11 +1,16 @@
-OPA = /opt/mlstate/bin/opa
+.PHONY: all clean run $(EXE)
+
+OPA ?= opa
 MINIMAL_VERSION = 60
+EXE = opa_chat.exe
 
-all: opa_chat.exe
+all: $(EXE)
 
-opa_chat.exe: src/main.opa
-	$(OPA) --minimal-version $(MINIMAL_VERSION) src/main.opa -o opa_chat.exe
+$(EXE): src/*.opa resources/*
+	$(OPA) --minimal-version $(MINIMAL_VERSION) src/main.opa -o $(EXE)
+
+run: all
+	./$(EXE) || exit 0 ## prevent ugly make error 130 :) ##
 
 clean:
-	\rm -Rf bsl/*.opp bsl/*.o
-	\rm -Rf *.exe _build _tracks *.log
+	rm -Rf *.exe _build _tracks *.log
