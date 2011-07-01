@@ -30,7 +30,8 @@ type message = {
   date : Date.date
   event : string
 }
-type msg = {message : message} / {connection : user} / {disconnection : user}
+type client_channel = channel(void)
+type msg = {message : message} / {connection : (user, client_channel)} / {disconnection : (user, client_channel)}
 
 db /history : intmap(message)
 
@@ -74,6 +75,7 @@ db /history : intmap(message)
 
 launch_date = Date.now()
 
+@server
 update_stats(mem) =
   uptime_duration = Date.between(launch_date, Date.now())
   uptime = Date.of_duration(uptime_duration)
@@ -85,30 +87,31 @@ update_stats(mem) =
 @client
 user_update(mem:int)(msgs:list(msg)) =
   do update_stats(mem)
-  List.iter(msg->
+  do List.iter(msg->
     match msg with
-     | {message = x} ->
-      line = <div class="line {x.event}">
-                <span class="date">{Date.to_string_time_only(x.date)}</span>
-                { match x.author with
+     | {~message} ->
+      line = <div class="line {message.event}">
+                <span class="date">{Date.to_string_time_only(message.date)}</span>
+                { match message.author with
                   | {system} -> <span class="system"/>
                   | {~author} -> <span class="user">{author.f2}</span> }
-                <span class="message">{x.text}</span>
+                <span class="message">{message.text}</span>
              </div>
       do Dom.transform([#conversation +<- line])
-      do Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
       void
      _ -> void
     //  | ~{users} -> list = Map.fold((elt, _, acc -> <>{acc}<li>{elt}</li></>), users, <></>)
     //                Dom.transform([#user_list <- <ul>{list}</ul>])
   , msgs)
+  Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
 
-//@server
+@server
 broadcast(author, event, text) =
   message = {~author ~text date=Date.now() ~event}
   do /history[?] <- message
   Network.broadcast({message = message}, room)
 
+@server
 build_page(header, content) =
   <div id=#header>
     <div id=#logo/>
@@ -121,31 +124,22 @@ send_message(broadcast) =
   _ = broadcast("", Dom.get_value(#entry))
   Dom.clear_value(#entry)
 
-do_logout(user)(_) =
-  _ = Network.broadcast({disconnection=user}, room)
-  //do Session.send(users, {remove=author})
-  Client.goto("/")
-
 @client
 do_broadcast(broadcast)(_) = send_message(broadcast)
 
 @server
-observe(msg) =
+client_observe(msg) =
   match msg
-  {connection=user} -> do jlog("connection {user}") void
-  {disconnection=user} -> do jlog("disconnection {user}") void
-  _ -> user_update(System.get_memory_usage()/(1024*1024))([msg])
+  {message=_} -> user_update(System.get_memory_usage()/(1024*1024))([msg])
+  _ -> void
 
 @server
-inform(user)() = do jlog("auto disconnection {user}") void
-
 init_client(user) =
-  //do Session.send(users, {add=author})
-  //do ping( -> Session.send(users, {ping=author}))
-  obs = Network.observe_and_inform(observe, inform(user), room)
-  _ = Network.broadcast({connection=user}, room)
+  obs = Network.observe(client_observe, room)
+  client_channel = Session.make_callback(_ -> void)
+  _ = Network.broadcast({connection=(user, client_channel)}, room)
   do Dom.bind_beforeunload_confirmation(_ ->
-    do Network.broadcast({disconnection=user}, room)
+    do Network.broadcast({disconnection=(user, client_channel)}, room)
     do Network.unobserve(obs)
     {none}
   )
@@ -156,12 +150,11 @@ init_client(user) =
   do update_stats(System.get_memory_usage()/(1024*1024))
   void
 
-launch_chat(author:string) =
-  user = (Random.int(65536), author)
+@server
+launch_chat(user:user) =
   broadcast = broadcast({author=user}, _, _)
   build_page(
-    <a class="button github" href="{GITHUB_URL}" target="_blank">Fork me on GitHub !</a>
-    <span class="button" onclick={do_logout(user)}>Logout</span>,
+    <a class="button github" href="{GITHUB_URL}" target="_blank">Fork me on GitHub !</a>,
     <div id=#conversation onready={_ -> init_client(user)}/>
     <div id=#user_list/>
     <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
@@ -173,11 +166,31 @@ launch_chat(author:string) =
 
 @client
 do_join(launch)(_) =
+  user = (Random.int(65536), Dom.get_value(#author))
   Dom.transform([
     #main <- <>Loading chat...</>,
-    #main <- launch(Dom.get_value(#author))]
+    #main <- launch(user)]
   )
 
+@server
+server_observe(msg) =
+  match msg
+  {connection=(user, client_channel)} ->
+    do jlog("connection {user}")
+    do Session.on_remove(client_channel, (->
+      do jlog("auto disconnection {user}")
+      void
+    ))
+    void
+  {disconnection=(user, _client_channel)} ->
+    do jlog("disconnection {user}")
+    void
+  _ -> void
+
+@server
+_ = Network.observe(server_observe, room)
+
+@server
 main() =
   <div id=#main>{
     build_page(
