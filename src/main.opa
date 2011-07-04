@@ -37,11 +37,9 @@ db /history : intmap(message)
 
 @publish room = Network.cloud("room") : Network.network(msg)
 
-@private
-users = Mutable.make([]:list(user))
+@private users = Mutable.make([]) : Mutable.t(list(user))
 
-@private
-launch_date = Date.now()
+@private launch_date = Date.now()
 
 @server
 server_observe(message) =
