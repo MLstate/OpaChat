@@ -47,17 +47,14 @@ launch_date = Date.now()
 server_observe(message) =
   match message
   {connection=(user, client_channel)} ->
-    do jlog("connection {user}")
     do users.set(List.add(user, users.get()))
     do Network.broadcast({stats}, room)
     do Session.on_remove(client_channel, (->
-      do jlog("auto disconnection {user}")
       do server_observe({disconnection=(user, client_channel)})
       void
     ))
     void
   {disconnection=(user, _client_channel)} ->
-    do jlog("disconnection {user}")
     do users.set(List.remove(user, users.get()))
     do Network.broadcast({stats}, room)
     void
