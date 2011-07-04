@@ -1,3 +1,5 @@
+/* Generic */
+
 * {
      margin: 0;
      padding: 0;
@@ -181,12 +183,12 @@ pre {
     cursor: pointer;
 }
 
-/***Header***/
+/* Header */
 
 #header {
      margin: 0;
      position: fixed;
-     height: 47px;
+     height: 50px;
      width: 100%;
      text-align: left;
      z-index: 100;
@@ -200,21 +202,23 @@ pre {
 #logo {
      background: url("/resources/opa-logo.png") no-repeat scroll 0 0 transparent;
      height: 41px;
-     margin: 5px 0 15px;
+     margin: 5px;
      width: 100px;
      float: left;
 }
 
 #header span.button, #header a.button {
      float: right;
+     margin: 5px;
+     color: black;
 }
 
-/***Content***/
+/* Content */
 
 #content {
      clear: both;
      position: absolute;
-     top: 47px;
+     top: 50px;
      width: 100%;
 }
 
@@ -222,11 +226,10 @@ pre {
     float: none;
 }
 
-/***Conversation***/
+/* Conversation */
 
 #conversation {
      float: left;
-     background: none repeat scroll 0% 0% transparent;
      overflow: auto;
      width: 80%;
      margin-bottom: 60px;
@@ -256,6 +259,8 @@ pre {
 .user {display:inline-block;color: #B30A0A;font-variant:small-caps;}
 .message{display:inline-block;color:#252525;}
 
+/* Stats */
+
 #stats {
      position: fixed;
      left: 0px;
@@ -264,6 +269,12 @@ pre {
      height: 30px;
      background: #F2F2ED;
 }
+
+#stats > span {
+     padding: 0 5px;
+}
+
+/* Chat bar */
 
 #chatbar {
      position: fixed;
@@ -289,14 +300,13 @@ pre {
      margin: 2px 5px;
 }
 
-/***User list***/
+/* User list */
 
 #user_list {
      position: fixed;
      top: 50px;
      right: 0px;
-     float: right;
      overflow: auto;
      width: 20%;
-     margin-bottom: 60px;
+     bottom: 60px;
 }
