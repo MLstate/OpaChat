@@ -22,7 +22,7 @@ import stdlib.system
 
 GITHUB_URL = "https://github.com/Aqua-Ye/OpaChat"
 
-type user = (int, string)
+type user = (int, string) // user_id, user_name
 type author = { system } / { author : user }
 type message = {
   author : author
@@ -31,78 +31,68 @@ type message = {
   event : string
 }
 type client_channel = channel(void)
-type msg = {message : message} / {connection : (user, client_channel)} / {disconnection : (user, client_channel)}
+type msg = {message : message} / {connection : (user, client_channel)} / {disconnection : (user, client_channel)} / {stats}
 
 db /history : intmap(message)
 
 @publish room = Network.cloud("room") : Network.network(msg)
 
-// @client
-// ping(fun)=
-//   Scheduler.timer(15000, fun)
+@private
+users = Mutable.make([]:list(user))
 
-// manage_users(user_list : stringmap(Date.date), action : users_action) =
-//   clean(key, value, acc) =
-//     time = Duration.in_seconds(Duration.between(value, Date.now()))
-//     if time > 20. then
-//        do broadcast({system}, "leave", "{key} has left the room (timeout)")
-//        acc
-//     else
-//        Map.add(key, value, acc)
-
-
-//   match action with
-//    | {add = u} ->       newmap = Map.add(u, Date.now(),user_list)
-//                         do broadcast({system}, "join", "{u} is connected to the room")
-//                         do Network.broadcast({users = newmap}, room)
-//                         {set = newmap}
-
-//    | {remove = u} ->    newmap = Map.remove(u, user_list)
-//                         do broadcast({system}, "leave", "{u} has left the room (quit)")
-//                         do Network.broadcast({users = newmap}, room)
-//                         {set = newmap}
-
-//    | {clean} ->         newmap = Map.fold(clean, user_list, Map.empty)
-//                         do Network.broadcast({users = newmap}, room)
-//                         {set = newmap}
-
-//    | {ping = u} ->      temp = Map.remove(u, user_list)
-//                         {set = Map.add(u, Date.now(), temp)}
-
-// users = Session.cloud("users", Map.empty, manage_users)
-
-// do Scheduler.timer(10000, ( -> Session.send(users, {clean})))
-
+@private
 launch_date = Date.now()
 
 @server
-update_stats(mem) =
-  uptime_duration = Date.between(launch_date, Date.now())
-  uptime = Date.of_duration(uptime_duration)
-  uptime = Date.shift_backward(uptime, Date.to_duration(Date.milliseconds(3600000))) // 1 hour shift
+server_observe(message) =
+  match message
+  {connection=(user, client_channel)} ->
+    do jlog("connection {user}")
+    do users.set(List.add(user, users.get()))
+    do Network.broadcast({stats}, room)
+    do Session.on_remove(client_channel, (->
+      do jlog("auto disconnection {user}")
+      do server_observe({disconnection=(user, client_channel)})
+      void
+    ))
+    void
+  {disconnection=(user, _client_channel)} ->
+    do jlog("disconnection {user}")
+    do users.set(List.remove(user, users.get()))
+    do Network.broadcast({stats}, room)
+    void
+  _ -> void
+
+@server
+_ = Network.observe(server_observe, room)
+
+@client
+update_stats((uptime, mem)) =
   do Dom.transform([#uptime <- <>Uptime: {Date.to_string_time_only(uptime)}</>])
   do Dom.transform([#memory <- <>Memory: {mem} Mo</>])
   void
 
 @client
-user_update(mem:int)(msgs:list(msg)) =
-  do update_stats(mem)
-  do List.iter(msg->
-    match msg with
-     | {~message} ->
-      line = <div class="line {message.event}">
-                <span class="date">{Date.to_string_time_only(message.date)}</span>
-                { match message.author with
-                  | {system} -> <span class="system"/>
-                  | {~author} -> <span class="user">{author.f2}</span> }
-                <span class="message">{message.text}</span>
-             </div>
-      do Dom.transform([#conversation +<- line])
-      void
-     _ -> void
-    //  | ~{users} -> list = Map.fold((elt, _, acc -> <>{acc}<li>{elt}</li></>), users, <></>)
-    //                Dom.transform([#user_list <- <ul>{list}</ul>])
-  , msgs)
+update_users(users) =
+  list = List.fold((elt, acc -> <>{acc}<li>{elt.f2}</li></>), users, <></>)
+  do Dom.transform([#users <- <>Users: {List.length(users)}</>])
+  do Dom.transform([#user_list <- <ul>{list}</ul>])
+  void
+
+@client
+message_update(stats)(messages:list(message)) =
+  do update_stats(stats)
+  do List.iter(message->
+    line = <div class="line {message.event}">
+              <span class="date">{Date.to_string_time_only(message.date)}</span>
+              { match message.author with
+                | {system} -> <span class="system"/>
+                | {~author} -> <span class="user">{author.f2}</span> }
+              <span class="message">{message.text}</span>
+           </div>
+    do Dom.transform([#conversation +<- line])
+    void
+  , messages)
   Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
 
 @server
@@ -128,15 +118,27 @@ send_message(broadcast) =
 do_broadcast(broadcast)(_) = send_message(broadcast)
 
 @server
+mem() = System.get_memory_usage()/(1024*1024)
+
+compute_stats() =
+  uptime_duration = Date.between(launch_date, Date.now())
+  uptime = Date.of_duration(uptime_duration)
+  uptime = Date.shift_backward(uptime, Date.to_duration(Date.milliseconds(3600000))) // 1 hour shift
+  (uptime, mem())
+
+@server
 client_observe(msg) =
   match msg
-  {message=_} -> user_update(System.get_memory_usage()/(1024*1024))([msg])
+  {~message} -> message_update(compute_stats())([message])
+  {stats} ->
+    do update_stats(compute_stats())
+    do update_users(users.get())
+    void
   _ -> void
 
 @server
-init_client(user) =
+init_client(user, client_channel) =
   obs = Network.observe(client_observe, room)
-  client_channel = Session.make_callback(_ -> void)
   _ = Network.broadcast({connection=(user, client_channel)}, room)
   do Dom.bind_beforeunload_confirmation(_ ->
     do Network.broadcast({disconnection=(user, client_channel)}, room)
@@ -146,16 +148,15 @@ init_client(user) =
   history_list = IntMap.To.val_list(/history)
   len = List.length(history_list)
   history = List.drop(len-20, history_list)
-  do user_update(0)(List.map(a->{message = a}, history))
-  do update_stats(System.get_memory_usage()/(1024*1024))
+  do message_update(compute_stats())(history)
   void
 
 @server
-launch_chat(user:user) =
+launch_chat(user:user, client_channel) =
   broadcast = broadcast({author=user}, _, _)
   build_page(
     <a class="button github" href="{GITHUB_URL}" target="_blank">Fork me on GitHub !</a>,
-    <div id=#conversation onready={_ -> init_client(user)}/>
+    <div id=#conversation onready={_ -> init_client(user, client_channel)}/>
     <div id=#user_list/>
     <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
     <div id=#chatbar>
@@ -165,46 +166,30 @@ launch_chat(user:user) =
   )
 
 @client
-do_join(launch)(_) =
-  user = (Random.int(65536), Dom.get_value(#author))
+do_join(user_id, launch)(_) =
+  user = (user_id, Dom.get_value(#author))
+  client_channel = Session.make_callback(ignore)
   Dom.transform([
     #main <- <>Loading chat...</>,
-    #main <- launch(user)]
-  )
-
-@server
-server_observe(msg) =
-  match msg
-  {connection=(user, client_channel)} ->
-    do jlog("connection {user}")
-    do Session.on_remove(client_channel, (->
-      do jlog("auto disconnection {user}")
-      void
-    ))
-    void
-  {disconnection=(user, _client_channel)} ->
-    do jlog("disconnection {user}")
-    void
-  _ -> void
-
-@server
-_ = Network.observe(server_observe, room)
+    #main <- launch(user, client_channel)
+  ])
 
 @server
 main() =
+  user_id = Random.int(65536) // a user identifier
   <div id=#main>{
     build_page(
       <h1>Wecome to OpaChat</h1>,
       <span>Choose your name: </span>
-      <input id=#author onready={_ -> Dom.give_focus(#author)} onnewline={do_join(launch_chat)}/>
-      <span class="button" onclick={do_join(launch_chat)}>Join</span>
+      <input id=#author onready={_ -> Dom.give_focus(#author)} onnewline={do_join(user_id, launch_chat)}/>
+      <span class="button" onclick={do_join(user_id, launch_chat)}>Join</span>
     )
   }</div>
 
 server =
   Server.one_page_bundle(
-    "OpaChat - a chat in Opa",
+    "OpaChat - a chat built with Opa",
     [@static_resource_directory("resources")], // include resources directory
-    ["resources/style.css"],
+    ["resources/style.css"], // web application CSS
     main
   )
