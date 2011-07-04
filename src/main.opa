@@ -68,10 +68,9 @@ update_stats((uptime, mem)) =
   void
 
 @client
-update_users(users) =
-  list = List.fold((elt, acc -> <>{acc}<li>{elt.f2}</li></>), users, <></>)
-  do Dom.transform([#users <- <>Users: {List.length(users)}</>])
-  do Dom.transform([#user_list <- <ul>{list}</ul>])
+update_users(nb_users, users) =
+  do Dom.transform([#users <- <>Users: {nb_users}</>])
+  do Dom.transform([#user_list <- <ul>{users}</ul>])
   void
 
 @client
@@ -127,7 +126,9 @@ client_observe(msg) =
   {~message} -> message_update(compute_stats())([message])
   {stats} ->
     do update_stats(compute_stats())
-    do update_users(users.get())
+    users = users.get()
+    users_html_list = List.fold((elt, acc -> <><li>{elt.f2}</li>{acc}</>), users, <></>)
+    do update_users(List.length(users), users_html_list)
     void
   _ -> void
 
