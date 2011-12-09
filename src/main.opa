@@ -19,173 +19,201 @@
 import stdlib.core.date
 import stdlib.web.client
 import stdlib.system
+import stdlib.widgets.bootstrap
 
-GITHUB_URL = "https://github.com/Aqua-Ye/OpaChat"
+/** Constants **/
 
-type user = (int, string) // user_id, user_name
-type author = { system } / { author : user }
+GITHUB_USER = "Aqua-Ye"
+GITHUB_REPO = "OpaChat"
+NB_LAST_MSGS = 10
+
+/** Types **/
+
+type user = {
+  int id,
+  string name
+}
+type source = { system } or { user user }
 type message = {
-  author : author
-  text : string
-  date : Date.date
-  event : string
+  source source,
+  string text,
+  Date.date date,
 }
 type client_channel = channel(void)
-type msg = {message : message} / {connection : (user, client_channel)} / {disconnection : (user, client_channel)} / {stats}
+type network_msg =
+   {message message}
+or {(user, client_channel) connection}
+or {user disconnection}
+or {stats}
 
-db /history : intmap(message)
+/** Database **/
 
-@publish room = Network.cloud("room") : Network.network(msg)
+database intmap(message) /history
 
-@private users = Mutable.make([]) : Mutable.t(list(user))
+exposed Network.network(network_msg) room = Network.cloud("room")
+private reference(list(user)) users = ServerReference.create([])
+private launch_date = Date.now()
 
-@private launch_date = Date.now()
+/** Page **/
 
-@server
-server_observe(message) =
-  match message
-  {connection=(user, client_channel)} ->
-    do users.set(List.add(user, users.get()))
-    do Network.broadcast({stats}, room)
-    do Session.on_remove(client_channel, (->
-      do server_observe({disconnection=(user, client_channel)})
-      void
-    ))
-    void
-  {disconnection=(user, _client_channel)} ->
-    do users.set(List.remove(user, users.get()))
-    do Network.broadcast({stats}, room)
-    void
-  _ -> void
-
-@server
-_ = Network.observe(server_observe, room)
-
-@client
-update_stats((uptime, mem)) =
-  do Dom.transform([#uptime <- <>Uptime: {Date.to_string_time_only(uptime)}</>])
-  do Dom.transform([#memory <- <>Memory: {mem} Mo</>])
-  void
-
-@client
-update_users(nb_users, users) =
-  do Dom.transform([#users <- <>Users: {nb_users}</>])
-  do Dom.transform([#user_list <- <ul>{users}</ul>])
-  void
-
-@client
-message_update(stats)(messages:list(message)) =
-  do update_stats(stats)
-  do List.iter(message->
-    line = <div class="line {message.event}">
-              <span class="date">{Date.to_string_time_only(message.date)}</span>
-              { match message.author with
-                | {system} -> <span class="system"/>
-                | {~author} -> <span class="user">{author.f2}</span> }
-              <span class="message">{message.text}</span>
-           </div>
-    do Dom.transform([#conversation +<- line])
-    void
-  , messages)
-  Dom.set_scroll_top(Dom.select_window(), Dom.get_scrollable_size(#content).y_px)
-
-@server
-broadcast(author, event, text) =
-  message = {~author ~text date=Date.now() ~event}
-  do /history[?] <- message
-  Network.broadcast({message = message}, room)
-
-@server
-build_page(header, content) =
+function build_page(header, content) {
   <div id=#header>
-    <div id=#logo/>
-    <div>{header}</div>
+    <img src="/resources/img/opa-cloud-logo.png"/>
+    {header}
   </div>
   <div id=#content>{content}</div>
+}
 
-@client
-send_message(broadcast) =
-  _ = broadcast("", Dom.get_value(#entry))
-  Dom.clear_value(#entry)
+/** Connection **/
 
-@client
-do_broadcast(broadcast)(_) = send_message(broadcast)
+server function server_observe(message) {
+  match (message) {
+  case {connection:(user, client_channel)} :
+    ServerReference.update(users, List.add(user, _))
+    Network.broadcast({stats}, room)
+    Session.on_remove(client_channel, function() {
+      server_observe({disconnection:user})
+    })
+  case {disconnection:user} :
+    ServerReference.update(users, List.remove(user, _))
+    Network.broadcast({stats}, room)
+  default: void
+  }
+}
 
-@server
-mem() = System.get_memory_usage()/(1024*1024)
+_ = Network.observe(server_observe, room)
 
-compute_stats() =
+/** Stats **/
+
+server function mem() {
+  System.get_memory_usage()/(1024*1024)
+}
+
+function compute_stats() {
   uptime_duration = Date.between(launch_date, Date.now())
   uptime = Date.of_duration(uptime_duration)
   uptime = Date.shift_backward(uptime, Date.to_duration(Date.milliseconds(3600000))) // 1 hour shift
   (uptime, mem())
+}
 
-@server
-client_observe(msg) =
-  match msg
-  {~message} -> message_update(compute_stats())([message])
-  {stats} ->
-    do update_stats(compute_stats())
-    users = users.get()
-    users_html_list = List.fold((elt, acc -> <><li>{elt.f2}</li>{acc}</>), users, <></>)
-    do update_users(List.length(users), users_html_list)
-    void
-  _ -> void
+client function update_stats((uptime, mem)) {
+  #uptime = <>Uptime: {Date.to_string_time_only(uptime)}</>
+  #memory = <>Memory: {mem} Mo</>
+}
 
-@server
-init_client(user, client_channel) =
+client function update_users(nb_users, users) {
+  #users = <>Users: {nb_users}</>
+  #user_list = <ul>{users}</ul>
+}
+
+/** Conversation **/
+
+client function message_update(stats, list(message) messages) {
+  update_stats(stats)
+  List.iter(function(message) {
+    line = <div class="line">
+              <span class="date">{Date.to_string_time_only(message.date)}</span>
+              { match (message.source) {
+                case {system} : <span class="system"/>
+                case {~user} : <span class="user">{user.name}</span>
+                }
+              }
+              <span class="message">{message.text}</span>
+           </div>
+    #conversation =+ line
+  }, messages)
+  Dom.scroll_to_bottom(#conversation)
+}
+
+exposed function server_broadcast(user, text) {
+  message = {source:user, ~text, date:Date.now()}
+  /history[?] <- message
+  Network.broadcast({~message}, room)
+}
+
+client function broadcast(user, _) {
+  _ = server_broadcast(user, Dom.get_value(#entry))
+  Dom.clear_value(#entry)
+}
+
+server function client_observe(msg) {
+  match (msg) {
+  case {~message} :
+    message_update(compute_stats(), [message])
+  case {stats} :
+    update_stats(compute_stats())
+    users = ServerReference.get(users)
+    users_html_list = List.fold(function(elt, acc) {
+                        <><li>{elt.name}</li>{acc}</>
+                      }, users, <></>)
+    update_users(List.length(users), users_html_list)
+  default : void
+  }
+}
+
+server function init_client(user, client_channel) {
+  Log.notice("Init", "client")
   obs = Network.observe(client_observe, room)
-  _ = Network.broadcast({connection=(user, client_channel)}, room)
-  do Dom.bind_beforeunload_confirmation(_ ->
-    do Network.broadcast({disconnection=(user, client_channel)}, room)
-    do Network.unobserve(obs)
-    {none}
-  )
+  Network.broadcast({connection:(user, client_channel)}, room)
+  Dom.bind_beforeunload_confirmation(function(_) {
+    Network.broadcast({disconnection:user}, room)
+    Network.unobserve(obs)
+    none
+  })
   history_list = IntMap.To.val_list(/history)
   len = List.length(history_list)
-  history = List.drop(len-20, history_list)
-  do message_update(compute_stats())(history)
-  void
+  history = List.drop(len-NB_LAST_MSGS, history_list)
+  message_update(compute_stats(), history)
+}
 
-@server
-launch_chat(user:user, client_channel) =
-  broadcast = broadcast({author=user}, _, _)
-  build_page(
-    <a class="button github" href="{GITHUB_URL}" target="_blank">Fork me on GitHub !</a>,
-    <div id=#conversation onready={_ -> init_client(user, client_channel)}/>
-    <div id=#user_list/>
-    <div id=#stats><span id=#users/><span id=#uptime/><span id=#memory/></div>
-    <div id=#chatbar>
-      <input id=#entry onready={_ -> Dom.give_focus(#entry)} onnewline={do_broadcast(broadcast)}/>
-      <span class="button" onclick={do_broadcast(broadcast)}>Send</span>
-    </div>
+server @async function enter_chat(user_name, client_channel) {
+  Log.notice("Init", "{user_name} entered chat")
+  user = {
+    id: Random.int(max_int),
+    name: user_name
+  }
+  broadcast = broadcast({user: user}, _)
+  #main = build_page(
+            <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=fork&count=true&size=large"
+                    allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>,
+    WBootstrap.Layout.fluid(
+      <div id=#user_list/>
+      <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>,
+      <div id=#conversation onready={function(_){init_client(user, client_channel)}}/>
+      <div id=#chatbar>
+        <input id=#entry
+               onready={function(_){Dom.give_focus(#entry)}}
+               onnewline={broadcast}/>
+      </div>
+    )
   )
+}
 
-@client
-do_join(user_id, launch)(_) =
-  user = (user_id, Dom.get_value(#author))
+client function join(_) {
+  name = Dom.get_value(#name)
+  #welcome = <p>Loading chat...</p>
   client_channel = Session.make_callback(ignore)
-  Dom.transform([
-    #main <- <>Loading chat...</>,
-    #main <- launch(user, client_channel)
-  ])
+  enter_chat(name, client_channel)
+}
 
-@server
-main() =
-  user_id = Random.int(65536) // a user identifier
+function start() {
   <div id=#main>{
-    build_page(
-      <h1>Wecome to OpaChat</h1>,
-      <span>Choose your name: </span>
-      <input id=#author onready={_ -> Dom.give_focus(#author)} onnewline={do_join(user_id, launch_chat)}/>
-      <span class="button" onclick={do_join(user_id, launch_chat)}>Join</span>
+    build_page(<h1>Wecome to OpaChat</h1>,
+      <div id=#welcome>
+        <label for="name">Choose your name: </label>
+        <input id=#name placeholder="Name"
+               onready={function(_){Dom.give_focus(#name)}}
+               onnewline={join}/>
+        <button class="btn primary"
+                onclick={join}>Join</button>
+      </div>
     )
   }</div>
+}
 
-server =
-  Server.one_page_bundle(
-    "OpaChat - a chat built with Opa",
-    [@static_resource_directory("resources")], // include resources directory
-    ["resources/style.css"], // web application CSS
-    main
-  )
+Server.start(Server.http, [
+  {resources: @static_resource_directory("resources")}, // include resources directory
+  {register: ["/resources/css/bootstrap.min.css", "/resources/css/style.css"]}, // web application CSS
+  {title: "OpaChat - a chat built with Opa", page:start }
+  ]
+)

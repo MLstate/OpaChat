@@ -1,0 +1,145 @@
+html {
+    overflow: hidden;
+}
+
+body {
+  background: #151515 url("/resources/img/texture-grunge-383838-tile.png") repeat 0 0;
+}
+
+#content .sidebar {
+position: fixed;
+top: 80px;
+left: 20px;
+width: 220px;
+bottom: 80px;
+overflow: auto;
+}
+
+#conversation {
+background: white;
+box-shadow: 0 1px 5px #000;
+-webkit-box-shadow: 0 1px 5px #000;
+-moz-box-shadow: 0 1px 5px #000;
+border-radius: 5px 5px 5px 5px;
+-moz-border-radius: 5px 5px 5px 5px;
+-webkit-border-radius: 5px 5px 5px 5px;
+}
+
+#user_list {
+background: #151515;
+background: rgba(0, 0, 0, 0.3);
+  padding: 20px 10px;
+}
+
+/* Header */
+
+#header {
+    height: 70px;
+    padding-top: 5px;
+    text-align: center;
+}
+
+#header h1 {
+    display: inline-block;
+    margin-left: 10px;
+    color: white;
+}
+
+/* Content */
+
+#welcome {
+    text-align: center;
+    margin-top: 10px;
+}
+
+#welcome label {
+    float: none;
+    color: white;
+}
+
+#content {
+position: fixed;
+left: 0;
+right: 0;
+bottom: 0;
+top: 80px;
+}
+
+#conversation {
+overflow: auto;
+position: fixed;
+bottom: 50px;
+top: 80px;
+right: 20px;
+left: 260px;
+}
+
+/* Conversation */
+
+ .line {
+      background: url("/resources/img/user.png") no-repeat 5px 5px;
+      clear: both;
+      display: block;
+      margin: 5px 5px 5px 0;
+      min-height: 40px;
+      padding: 5px 5px 5px 50px;
+      display:block;
+      padding:5px 5px 5px 50px;
+      border-bottom: 1px solid #ccc;
+      text-align:left;
+ }
+
+/* .line:after { */
+/*     border-bottom: 1px solid #FFF; */
+/*     content:""; */
+/*     display:block; */
+/*     position:relative; */
+/*     top:25px; */
+/* } */
+
+/* .user {display:inline-block;color: #B30A0A;font-variant:small-caps;} */
+/* .message{display:inline-block;color:#252525;} */
+
+/* Stats */
+
+#stats {
+background: white;
+box-shadow: 0 1px 5px #000;
+-webkit-box-shadow: 0 1px 5px #000;
+-moz-box-shadow: 0 1px 5px #000;
+border-radius: 5px 5px 5px 5px;
+-moz-border-radius: 5px 5px 5px 5px;
+-webkit-border-radius: 5px 5px 5px 5px;
+     position: fixed;
+     left: 20px;
+     bottom: 10px;
+     width: 220px;
+}
+
+#stats > div {
+     padding: 0 5px;
+}
+
+/* Chat bar */
+
+#chatbar {
+     position: fixed;
+     left: 260px;
+     bottom: 10px;
+     right: 30px;
+}
+
+#chatbar input#entry {
+     width: 100%;
+}
+
+/* /\* User list *\/ */
+
+/* #user_list { */
+/*      position: fixed; */
+/*      top: 50px; */
+/*      right: 0px; */
+/*      overflow: auto; */
+/*      width: 20%; */
+/*      bottom: 60px; */
+/* } */
