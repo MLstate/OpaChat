@@ -12,6 +12,6 @@ Launch
 $ `./opa_chat.exe`
 
 Build and run :)
--------------
+----------------
 
 $ `make run`
