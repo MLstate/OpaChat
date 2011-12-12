@@ -120,8 +120,7 @@ client @async function message_update(stats, list(message) messages) {
               { match (message.source) {
                 case {system} : <span class="system"/>
                 case {~user} : <span class="user">{user.name}</span>
-                }
-              }
+                } }
               <span class="message">{message.text}</span>
            </div>
     #conversation =+ line
@@ -170,7 +169,6 @@ server function client_observe(msg) {
 }
 
 server function init_client(user, client_channel) {
-  Log.notice("Init", "client")
   obs = Network.observe(client_observe, room)
   Network.broadcast({connection:(user, client_channel)}, room)
   Dom.bind_beforeunload_confirmation(function(_) {
@@ -185,12 +183,11 @@ server function init_client(user, client_channel) {
 }
 
 server @async function enter_chat(user_name, client_channel) {
-  Log.notice("Init", "{user_name} entered chat")
   user = {
     id: Random.int(max_int),
     name: user_name
   }
-  broadcast = broadcast({user: user}, _)
+  send = broadcast({user: user}, _)
   #Body = build_page(
     <div class="buttons">
       {watch_button}
@@ -200,29 +197,33 @@ server @async function enter_chat(user_name, client_channel) {
       <div id=#user_list/>
       <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
     </div>
-    <div id=#content>
-      <div id=#conversation onready={function(_){init_client(user, client_channel)}}/>
+    <div id=#content
+         onready={function(_){init_client(user, client_channel)}}>
+      <div id=#conversation/>
       <div id=#chatbar>
         <input id=#entry
+               autofocus="autofocus"
                onready={function(_){Dom.give_focus(#entry)}}
-               onnewline={broadcast}/>
+               onnewline={send}/>
       </div>
     </div>
   )
 }
 
-client function join(_) {
+client @async function join(_) {
   name = Dom.get_value(#name)
-  #welcome = <p>Loading chat...</p>
+  #content = <p>Loading chat...</p>
   client_channel = Session.make_callback(ignore)
   enter_chat(name, client_channel)
 }
 
-function start() {
-  build_page(<h1>OpaChat</h1><h4>A real-time web chat built in Opa</h4>,
+server function start() {
+  build_page(
+    <h1>OpaChat</h1><h4>A real-time web chat built in Opa</h4>,
     <div id=#login>
       <label for="name">Choose your name: </label>
       <input id=#name placeholder="Name"
+             autofocus="autofocus"
              onready={function(_){Dom.give_focus(#name)}}
              onnewline={join}/>
       <button class="btn primary"
@@ -238,6 +239,6 @@ function start() {
 Server.start(Server.http, [
   {resources: @static_resource_directory("resources")}, // include resources directory
   {register: ["/resources/css/bootstrap.min.css", "/resources/css/style.css"]}, // web application CSS
-  {title: "OpaChat - a real-time web chat built in Opa", page:start}
+  {title: "OpaChat - a real-time web chat built in Opa", page:start} // title and start page
   ]
 )
