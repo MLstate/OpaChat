@@ -16,10 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import stdlib.core.date
-import stdlib.web.client
-import stdlib.system
-import stdlib.widgets.bootstrap
+import stdlib.{core.date,web.client,system}
 
 /** Constants **/
 
@@ -29,10 +26,7 @@ NB_LAST_MSGS = 10
 
 /** Types **/
 
-type user = {
-  int id,
-  string name
-}
+type user = { int id, string name }
 type source = { system } or { user user }
 type message = {
   source source,
@@ -56,12 +50,20 @@ private launch_date = Date.now()
 
 /** Page **/
 
-function build_page(header, content) {
+watch_button =
+  <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=watch&count=true&size=large"
+          allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
+
+fork_button =
+  <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=fork&count=true&size=large"
+          allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
+
+function build_page(title, content) {
   <div id=#header>
-    <img src="/resources/img/opa-cloud-logo.png"/>
-    {header}
+    <img src="/resources/img/opa-cloud-logo.png" class="pull-left"/>
+    {title}
   </div>
-  <div id=#content>{content}</div>
+  <div id=#main>{content}</div>
 }
 
 /** Connection **/
@@ -96,19 +98,20 @@ function compute_stats() {
   (uptime, mem())
 }
 
-client function update_stats((uptime, mem)) {
+client @async function update_stats((uptime, mem)) {
   #uptime = <>Uptime: {Date.to_string_time_only(uptime)}</>
   #memory = <>Memory: {mem} Mo</>
 }
 
-client function update_users(nb_users, users) {
+client @async function update_users(nb_users, users) {
   #users = <>Users: {nb_users}</>
   #user_list = <ul>{users}</ul>
 }
 
 /** Conversation **/
 
-client function message_update(stats, list(message) messages) {
+
+client @async function message_update(stats, list(message) messages) {
   update_stats(stats)
   List.iter(function(message) {
     line = <div class="line">
@@ -173,19 +176,23 @@ server @async function enter_chat(user_name, client_channel) {
     name: user_name
   }
   broadcast = broadcast({user: user}, _)
-  #main = build_page(
-            <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=fork&count=true&size=large"
-                    allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>,
-    WBootstrap.Layout.fluid(
+  #Body = build_page(
+    <div class="buttons">
+      {watch_button}
+      {fork_button}
+    </div>,
+    <div id=#sidebar>
       <div id=#user_list/>
-      <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>,
+      <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
+    </div>
+    <div id=#content>
       <div id=#conversation onready={function(_){init_client(user, client_channel)}}/>
       <div id=#chatbar>
         <input id=#entry
                onready={function(_){Dom.give_focus(#entry)}}
                onnewline={broadcast}/>
       </div>
-    )
+    </div>
   )
 }
 
@@ -197,23 +204,25 @@ client function join(_) {
 }
 
 function start() {
-  <div id=#main>{
-    build_page(<h1>Wecome to OpaChat</h1>,
-      <div id=#welcome>
-        <label for="name">Choose your name: </label>
-        <input id=#name placeholder="Name"
-               onready={function(_){Dom.give_focus(#name)}}
-               onnewline={join}/>
-        <button class="btn primary"
-                onclick={join}>Join</button>
-      </div>
-    )
-  }</div>
+  build_page(<h1>OpaChat</h1><h4>A real-time web chat built in Opa</h4>,
+    <div id=#login>
+      <label for="name">Choose your name: </label>
+      <input id=#name placeholder="Name"
+             onready={function(_){Dom.give_focus(#name)}}
+             onnewline={join}/>
+      <button class="btn primary"
+              onclick={join}>Join</button>
+    </div>
+    <div class="buttons">
+      {watch_button}
+      {fork_button}
+    </div>
+  )
 }
 
 Server.start(Server.http, [
   {resources: @static_resource_directory("resources")}, // include resources directory
   {register: ["/resources/css/bootstrap.min.css", "/resources/css/style.css"]}, // web application CSS
-  {title: "OpaChat - a chat built with Opa", page:start }
+  {title: "OpaChat - a real-time web chat built in Opa", page:start}
   ]
 )
