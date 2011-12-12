@@ -91,7 +91,7 @@ server function mem() {
   System.get_memory_usage()/(1024*1024)
 }
 
-function compute_stats() {
+server function compute_stats() {
   uptime_duration = Date.between(launch_date, Date.now())
   uptime = Date.of_duration(uptime_duration)
   uptime = Date.shift_backward(uptime, Date.to_duration(Date.milliseconds(3600000))) // 1 hour shift
@@ -110,12 +110,13 @@ client @async function update_users(nb_users, users) {
 
 /** Conversation **/
 
-
 client @async function message_update(stats, list(message) messages) {
   update_stats(stats)
   List.iter(function(message) {
+    date = Date.to_formatted_string(Date.default_printer, message.date)
+    time = Date.to_string_time_only(message.date)
     line = <div class="line">
-              <span class="date">{Date.to_string_time_only(message.date)}</span>
+              <span class="date" title="{date}">{time}</span>
               { match (message.source) {
                 case {system} : <span class="system"/>
                 case {~user} : <span class="user">{user.name}</span>
@@ -128,13 +129,13 @@ client @async function message_update(stats, list(message) messages) {
   Dom.scroll_to_bottom(#conversation)
 }
 
-exposed function server_broadcast(user, text) {
+exposed @async function server_broadcast(user, text) {
   message = {source:user, ~text, date:Date.now()}
   /history[?] <- message
   Network.broadcast({~message}, room)
 }
 
-client function broadcast(user, _) {
+client @async function broadcast(user, _) {
   _ = server_broadcast(user, Dom.get_value(#entry))
   Dom.clear_value(#entry)
 }
@@ -150,6 +151,20 @@ server function client_observe(msg) {
                         <><li>{elt.name}</li>{acc}</>
                       }, users, <></>)
     update_users(List.length(users), users_html_list)
+  case {connection:(user, _)} :
+    message = {
+      source: {system},
+      text : "{user.name} joined the room",
+      date : Date.now(),
+    }
+    message_update(compute_stats(), [message])
+  case {disconnection:user} :
+    message = {
+      source: {system},
+      text : "{user.name} left the room",
+      date : Date.now(),
+    }
+    message_update(compute_stats(), [message])
   default : void
   }
 }
