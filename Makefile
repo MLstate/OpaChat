@@ -3,7 +3,7 @@ S = @ # silent
 .PHONY: all clean run $(EXE)
 
 OPA ?= opa
-MINIMAL_VERSION = 1024
+MINIMAL_VERSION = 1046
 EXE = opa_chat.exe
 
 all: $(EXE)
