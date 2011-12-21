@@ -3,7 +3,7 @@ A simple real-time web chat built in Opa.
 
 1) Requirements
 ---------------
-[Opa](https://opalang.org/get.xmlt) build > 1024
+[Opa](https://opalang.org/get.xmlt) build > 1046
 
 2) Build
 --------
