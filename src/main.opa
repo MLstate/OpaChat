@@ -60,7 +60,7 @@ fork_button =
 
 function build_page(title, content) {
   <div id=#header>
-    <img src="/resources/img/opa-cloud-logo.png" class="pull-left"/>
+    <h2 class="pull-left">OpaChat</h2>
     {title}
   </div>
   <div id=#main>{content}</div>
@@ -194,11 +194,12 @@ server @async function enter_chat(user_name, client_channel) {
       {fork_button}
     </div>,
     <div id=#sidebar>
-      <div id=#user_list/>
-      <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
+      <h4>Users online</h4>
+      <div id=#user_list/>    
     </div>
     <div id=#content
-         onready={function(_){init_client(user, client_channel)}}>
+         onready={function(_){init_client(user, client_channel)}}>     
+      <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
       <div id=#conversation/>
       <div id=#chatbar>
         <input id=#entry
@@ -219,20 +220,20 @@ client @async function join(_) {
 
 server function start() {
   build_page(
-    <h1>OpaChat</h1><h4>A real-time web chat built in Opa</h4>,
-    <div id=#login>
-      <label for="name">Choose your name: </label>
-      <input id=#name placeholder="Name"
-             autofocus="autofocus"
-             onready={function(_){Dom.give_focus(#name)}}
-             onnewline={join}/>
-      <button class="btn primary"
-              onclick={join}>Join</button>
-    </div>
     <div class="buttons">
       {watch_button}
       {fork_button}
-    </div>
+    </div>,
+    <h4>A real-time web chat built in Opa.</h4>
+    <div id=#login>
+       <input id=#name placeholder="Name"
+            class="xlarge"
+            autofocus="autofocus"
+            onready={function(_){Dom.give_focus(#name)}}
+            onnewline={join}/>
+        <button class="btn primary"
+            onclick={join}>Join</button>
+     </div>
   )
 }
 
