@@ -189,7 +189,7 @@ server @async function enter_chat(user_name, client_channel) {
   }
   send = broadcast({user: user}, _)
   #Body = build_page(
-    <div class="buttons">
+    <div class="buttons pull-right">
       {watch_button}
       {fork_button}
     </div>,
@@ -198,7 +198,7 @@ server @async function enter_chat(user_name, client_channel) {
       <div id=#user_list/>    
     </div>
     <div id=#content
-         onready={function(_){init_client(user, client_channel)}}>     
+         onready={function(_){init_client(user, client_channel)}}>
       <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
       <div id=#conversation/>
       <div id=#chatbar>
@@ -220,26 +220,28 @@ client @async function join(_) {
 
 server function start() {
   build_page(
-    <div class="buttons">
+    <div class="buttons pull-right">
       {watch_button}
       {fork_button}
     </div>,
     <h4>A real-time web chat built in Opa.</h4>
-    <div id=#login>
-       <input id=#name placeholder="Name"
-            class="xlarge"
-            autofocus="autofocus"
-            onready={function(_){Dom.give_focus(#name)}}
-            onnewline={join}/>
-        <button class="btn primary"
-            onclick={join}>Join</button>
-     </div>
+    <div id=#login class="form-inline">
+      <input id=#name
+             placeholder="Name"
+             autofocus="autofocus"
+             onready={function(_){Dom.give_focus(#name)}}
+             onnewline={join}/>
+       <button class="btn primary"
+           onclick={join}>Join</button>
+    </div>
   )
 }
 
 Server.start(Server.http, [
-  {resources: @static_resource_directory("resources")}, // include resources directory
-  {register: ["/resources/css/bootstrap.min.css", "/resources/css/style.css"]}, // web application CSS
-  {title: "OpaChat - a real-time web chat built in Opa", page:start} // title and start page
-  ]
-)
+  { resources : @static_resource_directory("resources") }, // include resources directory
+  { register : [
+      "/resources/css/bootstrap.min.css",
+      "/resources/css/style.css"
+    ] }, // web application CSS
+  { title : "OpaChat - a real-time web chat built in Opa", page : start } // title and start page
+])
