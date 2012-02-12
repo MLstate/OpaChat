@@ -1,4 +1,4 @@
-/*  A simple, one-room, scalable real-time web chat, with sharing feature
+/*  A simple, one-room, scalable real-time web chat, with file sharing
 
     Copyright © 2010-2011 MLstate
     Copyright © 2012 Frederic Ye
