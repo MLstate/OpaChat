@@ -1,13 +1,20 @@
 /* Authors: Ida Swarczewskaja, Frederic Ye */
 
 /* Generic */
-html {overflow: hidden;}
-body {
-  background: #151515 url("/resources/img/texture-grunge-383838-tile.png") repeat 0 0;
-  color:gray;
+html {
+    overflow: hidden;
 }
-a {color:#18D;}
-h4 {color: gray;line-height:16px;}
+body {
+    background: #151515 url("/resources/img/texture-grunge-383838-tile.png") repeat 0 0;
+    color: gray;
+}
+a {
+    color:#18D;
+}
+h4 {
+    color: gray;
+    line-height: 16px;
+}
 
 /* Header */
 #header {
@@ -17,8 +24,13 @@ h4 {color: gray;line-height:16px;}
     top: 5px;
     left: 10px;
 }
-#header h2 {color: white;margin: 0 20px 0 0;}
-.buttons {margin-top: 5px;}
+#header h2 {
+    color: white;
+    margin-right: 20px;
+}
+.buttons {
+    margin-top: 5px;
+}
 
 /* Main */
 #main {
@@ -58,10 +70,15 @@ h4 {color: gray;line-height:16px;}
     clear: both;
     display: block;
     padding: 5px;
-    text-align:left;
+    text-align: left;
 }
-.line .date {color:#555;}
-.user {font-weight: bold;color:#18D;}
+.line .date {
+    color: #555;
+}
+.user {
+    font-weight: bold;
+    color: #18D;
+}
 
 /* Chatbar */
 #chatbar {
@@ -70,12 +87,14 @@ h4 {color: gray;line-height:16px;}
     bottom: 8px;
     right: 10px;
 }
-#chatbar input#entry {width: 100%;}
+#chatbar input#entry {
+    width: 100%;
+}
 
 /* Stats */
 #stats {
-    background:#18D;
-    color:white;
+    background: #18D;
+    color: white;
     box-shadow: 0 1px 5px #000;
     -webkit-box-shadow: 0 1px 5px #000;
     -moz-box-shadow: 0 1px 5px #000;
@@ -87,7 +106,10 @@ h4 {color: gray;line-height:16px;}
     right: 0;
     top: 0
 }
-#stats > div {padding: 0 5px;float:left;}
+#stats > div {
+    padding: 0 5px;
+    float:left;
+}
 
 /* Sidebar */
 #sidebar {
@@ -105,6 +127,10 @@ h4 {color: gray;line-height:16px;}
     bottom: 60px;
     overflow: auto;
 }
-#user_list ul {margin-bottom: 0;}
-#user_list ul li {color:#18D;}
+#user_list ul {
+    margin-bottom: 0;
+}
+#user_list ul li {
+    color:#18D;
+}
 
