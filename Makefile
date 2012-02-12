@@ -12,7 +12,7 @@ $(EXE): src/*.opa resources/*
 	$(OPA) --parser js-like --minimal-version $(MINIMAL_VERSION) src/main.opa -o $(EXE)
 
 run: all
-	$(S) ./$(EXE) || exit 0 ## prevent ugly make error 130 :) ##
+	$(S) ./$(EXE) $(RUN_OPT) || exit 0 ## prevent ugly make error 130 :) ##
 
 clean:
 	rm -Rf *.exe _build _tracks *.log **/#*#
