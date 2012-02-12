@@ -1,6 +1,7 @@
-/*  A simple, one-room, scalable real-time web chat
+/*  A simple, one-room, scalable real-time web chat, with sharing feature
 
-    Copyright (C) 2010-2011  MLstate
+    Copyright © 2010-2011 MLstate
+    Copyright © 2012 Frederic Ye
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -179,6 +180,7 @@ server function init_client(user, client_channel) {
   history_list = IntMap.To.val_list(/history)
   len = List.length(history_list)
   history = List.drop(len-NB_LAST_MSGS, history_list)
+  OpaShare.init()
   message_update(compute_stats(), history)
 }
 
@@ -195,7 +197,8 @@ server @async function enter_chat(user_name, client_channel) {
     </div>,
     <div id=#sidebar>
       <h4>Users online</h4>
-      <div id=#user_list/>    
+      <div id=#user_list/>
+      {OpaShare.html()}
     </div>
     <div id=#content
          onready={function(_){init_client(user, client_channel)}}>
