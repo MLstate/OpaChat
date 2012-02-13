@@ -1,6 +1,6 @@
 S = @ # silent
 
-.PHONY: all clean run $(EXE)
+.PHONY: all clean run plugins $(EXE)
 
 OPA ?= opa
 OPA_OPT ?= --parser js-like
