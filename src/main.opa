@@ -115,6 +115,8 @@ client @async function update_stats((uptime, mem)) {
   #memory = <>Memory: {mem} Mo</>
 }
 
+/** Users **/
+
 client @async function update_users(nb_users, users) {
   #users = <>Users: {nb_users}</>
   #user_list = <ul>{users}</ul>
