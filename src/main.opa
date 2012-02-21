@@ -326,6 +326,7 @@ Server.start(Server.http, [
   { resources : @static_resource_directory("resources") }, // include resources directory
   { register : [
       "/resources/css/bootstrap.min.css",
+      "/resources/css/bootstrap-responsive.min.css",
       "/resources/css/style.css",
     ] }, // include CSS in headers
   { custom : url_parser }
