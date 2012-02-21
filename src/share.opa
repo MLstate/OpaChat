@@ -21,9 +21,9 @@ database intmap(OpaShare.file) /files
 
 module OpaShare {
 
-  client function init() {
-    FilePlugin.hook_file_drop(Dom.select_class("dropzone"), waiting_file_treatment, handle_file_selection);
-    FilePlugin.hook_file_chooser(#files, handle_file_selection);
+  client function init(callback) {
+    FilePlugin.hook_file_drop(Dom.select_class("dropzone"), waiting_file_treatment, handle_file_selection(callback));
+    FilePlugin.hook_file_chooser(#files, handle_file_selection(callback));
   }
 
   client function waiting_file_treatment() {
@@ -31,28 +31,27 @@ module OpaShare {
     void
   }
 
-  client function handle_file_selection(string name, string typ, int size, string content) {
-    Log.info("File", "Sending {name} {typ} {content}")
-    if (size > 10*1024*1024) {
+  client function handle_file_selection(callback)(string name, string mimetype, int size, string content) {
+    if (size > 20*1024*1024) {
       #share = <>{TOO_BIG_TEXT}</>
       void
     } else {
       #share = <>{DROP_TEXT}</>
-      process_upload(name, typ, size, content)
+      _ = process_upload(name, mimetype, size, content, callback)
       void
     }
   }
 
-  exposed function process_upload(string name, string typ, int size, string content) {
+  exposed function process_upload(string name, string mimetype, int size, string content, callback) {
     decoded_content =
       offset = Option.get(String.index("base64,", content)) + 7
       data = String.sub(offset, String.length(content)-offset, content)
       Crypto.Base64.decode2(data)
     os_file = {
-      name: name,
-      size: size,
+      ~name,
+      ~size,
       content: decoded_content,
-      mimetype: typ,
+      ~mimetype,
       date_uploaded: Date.now(),
       date_downloaded: Date.now(),
       count: 0,
@@ -60,6 +59,7 @@ module OpaShare {
     }
     key = Db3.fresh_key(@/files)
     /files[key] <- os_file
+    callback(name, mimetype, key)
   }
 
   function html() {
@@ -70,6 +70,10 @@ module OpaShare {
       </p>
       <input id=#files type="file" multiple="multiple"/>
     </div>
+  }
+
+  function get(key) {
+    ?/files[key]
   }
 
 }

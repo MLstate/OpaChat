@@ -34,12 +34,20 @@ type message = {
   string text,
   Date.date date,
 }
+type media = {
+  source source,
+  string name,
+  string src,
+  string mimetype,
+  Date.date date,
+}
 type client_channel = channel(void)
 type network_msg =
    {message message}
 or {(user, client_channel) connection}
 or {user disconnection}
 or {stats}
+or {media media}
 
 /** Database **/
 
@@ -59,10 +67,13 @@ fork_button =
   <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=fork&count=true&size=large"
           allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
 
-function build_page(title, content) {
+function build_page(content) {
   <div id=#header>
     <h2 class="pull-left">OpaChat</h2>
-    {title}
+    <div class="buttons pull-right">
+      {watch_button}
+      {fork_button}
+    </div>
   </div>
   <div id=#main>{content}</div>
 }
@@ -111,6 +122,13 @@ client @async function update_users(nb_users, users) {
 
 /** Conversation **/
 
+function source_to_html(source) {
+  match (source) {
+  case {system} : <span class="system"/>
+  case {~user} : <span class="user">{user.name}</span>
+  }
+}
+
 client @async function message_update(stats, list(message) messages) {
   update_stats(stats)
   List.iter(function(message) {
@@ -118,14 +136,54 @@ client @async function message_update(stats, list(message) messages) {
     time = Date.to_string_time_only(message.date)
     line = <div class="line">
               <span class="date" title="{date}">{time}</span>
-              { match (message.source) {
-                case {system} : <span class="system"/>
-                case {~user} : <span class="user">{user.name}</span>
-                } }
+              { source_to_html(message.source) }
               <span class="message">{message.text}</span>
            </div>
     #conversation =+ line
   }, messages)
+  Dom.scroll_to_bottom(#conversation)
+}
+
+client @async function media_update(stats, list(media) medias) {
+  update_stats(stats)
+  List.iter(function(media) {
+    date = Date.to_formatted_string(Date.default_printer, media.date)
+    time = Date.to_string_time_only(media.date)
+    media_parser = parser {
+      case "image/" .*: {image}
+      case "audio/" .*: {audio}
+      case "video/" .*: {video}
+    }
+    line = <div class="line">
+              <span class="date" title="{date}">{time}</span>
+              { source_to_html(media.source) }
+              { match (Parser.try_parse(media_parser, media.mimetype)) {
+                case {some:{image}}:
+                  <img src="{media.src}" alt="{media.name}"/>
+                case {some:{audio}}:
+                  <audio src="{media.src}"
+                         controls="controls"
+                         type="{media.mimetype}"
+                         preload="auto">
+                    Your browser does not support the audio tag!
+                  </audio>
+                case {some:{video}}:
+                  <video src="{media.src}"
+                         controls="controls"
+                         preload="auto"
+                         type="{media.name}">
+                    Your browser does not support the video tag!
+                  </video>
+                default:
+                  <span class="media {media.mimetype}"> is sharing a file :
+                    <a target="_blank" href="{media.src}"
+                       draggable="true"
+                       data-downloadurl="{media.mimetype}:{media.name}:{media.src}">{media.name}</a>
+                  </span>
+                } }
+           </div>
+    #conversation =+ line
+  }, medias)
   Dom.scroll_to_bottom(#conversation)
 }
 
@@ -165,8 +223,21 @@ server function client_observe(msg) {
       date : Date.now(),
     }
     message_update(compute_stats(), [message])
+  case {~media} :
+    media_update(compute_stats(), [media])
   default : void
   }
+}
+
+server function file_uploaded(user)(name, mimetype, key) {
+  media = {
+    source: {~user},
+    ~name,
+    src: "/file/{key}",
+    ~mimetype,
+    date: Date.now(),
+  }
+  Network.broadcast({~media}, room)
 }
 
 server function init_client(user, client_channel) {
@@ -180,7 +251,7 @@ server function init_client(user, client_channel) {
   history_list = IntMap.To.val_list(/history)
   len = List.length(history_list)
   history = List.drop(len-NB_LAST_MSGS, history_list)
-  OpaShare.init()
+  OpaShare.init(file_uploaded(user))
   message_update(compute_stats(), history)
 }
 
@@ -189,12 +260,9 @@ server @async function enter_chat(user_name, client_channel) {
     id: Random.int(max_int),
     name: user_name
   }
-  send = broadcast({user: user}, _)
+  send = broadcast({~user}, _)
+  // #Body is the default body id in Opa
   #Body = build_page(
-    <div class="buttons pull-right">
-      {watch_button}
-      {fork_button}
-    </div>,
     <div id=#sidebar>
       <h4>Users online</h4>
       <div id=#user_list/>
@@ -208,7 +276,8 @@ server @async function enter_chat(user_name, client_channel) {
         <input id=#entry
                autofocus="autofocus"
                onready={function(_){Dom.give_focus(#entry)}}
-               onnewline={send}/>
+               onnewline={send}
+               x-webkit-speech="x-webkit-speech"/>
       </div>
     </div>
   )
@@ -222,11 +291,7 @@ client @async function join(_) {
 }
 
 server function start() {
-  build_page(
-    <div class="buttons pull-right">
-      {watch_button}
-      {fork_button}
-    </div>,
+  page = build_page(
     <h4>A real-time web chat built in Opa.</h4>
     <div id=#login class="form-inline">
       <input id=#name
@@ -235,16 +300,33 @@ server function start() {
              onready={function(_){Dom.give_focus(#name)}}
              onnewline={join}/>
        <button class="btn primary"
-           onclick={join}>Join</button>
+               onclick={join}>Join</button>
     </div>
   )
+  Resource.full_page_with_doctype(
+    "OpaChat - a real-time web chat built in Opa",
+    {html5},
+    page, <></>, {success},
+    []
+  )
+}
+
+url_parser = parser {
+  case "/file/" key=Rule.integer:
+    match (OpaShare.get(key)) {
+      case {some:file}:
+        Resource.binary(file.content, file.mimetype)
+        |> Resource.add_header(_, {content_disposition:{attachment:file.name}})
+      default: start()
+    }
+  case (.*): start()
 }
 
 Server.start(Server.http, [
   { resources : @static_resource_directory("resources") }, // include resources directory
   { register : [
       "/resources/css/bootstrap.min.css",
-      "/resources/css/style.css"
-    ] }, // web application CSS
-  { title : "OpaChat - a real-time web chat built in Opa", page : start } // title and start page
+      "/resources/css/style.css",
+    ] }, // include CSS in headers
+  { custom : url_parser }
 ])
