@@ -290,11 +290,20 @@ server @async function enter_chat(user_name, client_channel) {
 
 client @async function join(_) {
   name = Dom.get_value(#name)
-  #content = <p>Loading chat...</p>
   client_channel = Session.make_callback(ignore)
   enter_chat(name, client_channel)
 }
 
+headers =
+  Xhtml.of_string_unsafe("
+<!--[if lt IE 9]>
+<script src=\"//html5shiv.googlecode.com/svn/trunk/html5.js\"></script>
+<![endif]-->") <+>
+  <meta charset="utf-8"></meta>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"></meta>
+  <meta name="viewport" content="width=device-width,initial-scale=1"></meta>
+
+// Start page
 server function start() {
   page = build_page(
     <h4>A real-time web chat built in Opa.</h4>
@@ -311,7 +320,7 @@ server function start() {
   Resource.full_page_with_doctype(
     "OpaChat - a real-time web chat built in Opa",
     {html5},
-    page, <></>, {success},
+    page, headers, {success},
     []
   )
 }
