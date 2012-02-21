@@ -31,7 +31,6 @@ function file_to_content(file, cb) {
         if (!$(e.target).hasClass("dropzone") &&
 	    !$(e.target).parent().hasClass("dropzone")) return;
         waiting_cb();
-	console.log(e);
         var oe = e.originalEvent;
         $(oe.dataTransfer.files).each(
 	    function(key, file) {
