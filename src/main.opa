@@ -187,15 +187,26 @@ client @async function media_update(stats, list(media) medias) {
   Dom.scroll_to_bottom(#conversation)
 }
 
-exposed @async function server_broadcast(user, text) {
+exposed @async function broadcast(user, text) {
   message = {source:user, ~text, date:Date.now()}
   /history[?] <- message
   Network.broadcast({~message}, room)
 }
 
-client @async function broadcast(user, _) {
-  _ = server_broadcast(user, Dom.get_value(#entry))
+client @async function send_message(user, _) {
+  broadcast(user, Dom.get_value(#entry))
   Dom.clear_value(#entry)
+}
+
+server function file_uploaded(user)(name, mimetype, key) {
+  media = {
+    source: {~user},
+    ~name,
+    src: "/file/{key}",
+    ~mimetype,
+    date: Date.now(),
+  }
+  Network.broadcast({~media}, room)
 }
 
 server function client_observe(msg) {
@@ -233,19 +244,8 @@ server function client_observe(msg) {
   }
 }
 
-server function file_uploaded(user)(name, mimetype, key) {
-  media = {
-    source: {~user},
-    ~name,
-    src: "/file/{key}",
-    ~mimetype,
-    date: Date.now(),
-  }
-  Network.broadcast({~media}, room)
-}
-
 // Init the client from the server
-server function init_client(user, client_channel) {
+server function init_client(user, client_channel, _) {
   // Observe client
   obs = Network.observe(client_observe, room)
   Network.broadcast({connection:(user, client_channel)}, room)
@@ -269,7 +269,6 @@ server @async function enter_chat(user_name, client_channel) {
     id: Random.int(max_int),
     name: user_name
   }
-  send = broadcast({~user}, _)
   // #Body is the default body id in Opa
   #Body = build_page(
     <div id=#sidebar>
@@ -278,14 +277,14 @@ server @async function enter_chat(user_name, client_channel) {
       {OpaShare.html()}
     </div>
     <div id=#content
-         onready={function(_){init_client(user, client_channel)}}>
+         onready={init_client(user, client_channel, _)}>
       <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
       <div id=#conversation/>
       <div id=#chatbar>
         <input id=#entry
                autofocus="autofocus"
                onready={function(_){Dom.give_focus(#entry)}}
-               onnewline={send}
+               onnewline={send_message({~user}, _)}
                x-webkit-speech="x-webkit-speech"/>
       </div>
     </div>
