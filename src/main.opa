@@ -44,17 +44,17 @@ type media = {
 type client_channel = channel(void)
 type network_msg =
    {message message}
+or {media media}
 or {(user, client_channel) connection}
 or {user disconnection}
 or {stats}
-or {media media}
 
 /** Database **/
 
 database intmap(message) /history
 
 exposed Network.network(network_msg) room = Network.cloud("room")
-private reference(list(user)) users = ServerReference.create([])
+private reference(intmap(user)) users = ServerReference.create(IntMap.empty)
 private launch_date = Date.now()
 
 /** Page **/
@@ -83,13 +83,13 @@ function build_page(content) {
 server function server_observe(message) {
   match (message) {
   case {connection:(user, client_channel)} :
-    ServerReference.update(users, List.add(user, _))
+    ServerReference.update(users, IntMap.add(user.id, user, _))
     Network.broadcast({stats}, room)
     Session.on_remove(client_channel, function() {
       server_observe({disconnection:user})
     })
   case {disconnection:user} :
-    ServerReference.update(users, List.remove(user, _))
+    ServerReference.update(users, IntMap.remove(user.id, _))
     Network.broadcast({stats}, room)
   default: void
   }
@@ -202,13 +202,8 @@ server function client_observe(msg) {
   match (msg) {
   case {~message} :
     message_update(compute_stats(), [message])
-  case {stats} :
-    update_stats(compute_stats())
-    users = ServerReference.get(users)
-    users_html_list = List.fold(function(elt, acc) {
-                        <><li>{elt.name}</li>{acc}</>
-                      }, users, <></>)
-    update_users(List.length(users), users_html_list)
+  case {~media} :
+    media_update(compute_stats(), [media])
   case {connection:(user, _)} :
     message = {
       source: {system},
@@ -223,8 +218,17 @@ server function client_observe(msg) {
       date : Date.now(),
     }
     message_update(compute_stats(), [message])
-  case {~media} :
-    media_update(compute_stats(), [media])
+  case {stats} :
+    update_stats(compute_stats())
+    users = ServerReference.get(users)
+            |> IntMap.To.val_list(_)
+            |> List.sort_by(function(u){u.name}, _)
+    users_html_list =
+      List.fold(function(user, acc) {
+        <li>{user.name}</li>
+        <+> acc
+      }, users, <></>)
+    update_users(List.length(users), users_html_list)
   default : void
   }
 }
@@ -294,6 +298,7 @@ client @async function join(_) {
   enter_chat(name, client_channel)
 }
 
+// Page headers
 headers =
   Xhtml.of_string_unsafe("
 <!--[if lt IE 9]>
@@ -329,10 +334,10 @@ server function start() {
 url_parser = parser {
   case "/file/" key=Rule.integer:
     match (OpaShare.get(key)) {
-      case {some:file}:
-        Resource.binary(file.content, file.mimetype)
-        |> Resource.add_header(_, {content_disposition:{attachment:file.name}})
-      default: start()
+    case {some:file}:
+      Resource.binary(file.content, file.mimetype)
+      |> Resource.add_header(_, {content_disposition:{attachment:file.name}})
+    default: start()
     }
   case (.*): start()
 }
