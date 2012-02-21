@@ -240,19 +240,24 @@ server function file_uploaded(user)(name, mimetype, key) {
   Network.broadcast({~media}, room)
 }
 
+// Init the client from the server
 server function init_client(user, client_channel) {
+  // Observe client
   obs = Network.observe(client_observe, room)
   Network.broadcast({connection:(user, client_channel)}, room)
+  // Observe disconnection
   Dom.bind_beforeunload_confirmation(function(_) {
     Network.broadcast({disconnection:user}, room)
     Network.unobserve(obs)
     none
   })
+  // Send NB_LAST_MSGS messages
   history_list = IntMap.To.val_list(/history)
   len = List.length(history_list)
   history = List.drop(len-NB_LAST_MSGS, history_list)
-  OpaShare.init(file_uploaded(user))
   message_update(compute_stats(), history)
+  // Initialize OpaShare
+  OpaShare.init(file_uploaded(user))
 }
 
 server @async function enter_chat(user_name, client_channel) {
@@ -311,6 +316,7 @@ server function start() {
   )
 }
 
+// Parse URL
 url_parser = parser {
   case "/file/" key=Rule.integer:
     match (OpaShare.get(key)) {
@@ -322,6 +328,7 @@ url_parser = parser {
   case (.*): start()
 }
 
+// Start the server
 Server.start(Server.http, [
   { resources : @static_resource_directory("resources") }, // include resources directory
   { register : [
@@ -329,5 +336,5 @@ Server.start(Server.http, [
       "/resources/css/bootstrap-responsive.min.css",
       "/resources/css/style.css",
     ] }, // include CSS in headers
-  { custom : url_parser }
+  { custom : url_parser } // URL parser
 ])
