@@ -3,6 +3,7 @@ S = @ # silent
 .PHONY: all clean run plugins $(EXE)
 
 OPA ?= opa
+OPA_PLUGIN ?= opa-plugin-builder
 OPA_OPT ?= --parser js-like
 MINIMAL_VERSION = 1046
 EXE = opa_chat.exe
@@ -10,7 +11,7 @@ EXE = opa_chat.exe
 all: $(EXE)
 
 plugins: plugins/file/file.js
-	opa-plugin-builder --js-validator-off plugins/file/file.js -o file.opp
+	$(OPA_PLUGIN) --js-validator-off plugins/file/file.js -o file.opp
 	$(OPA) $(OPA_OPT) plugins/file/file.opa file.opp
 
 $(EXE): plugins src/*.opa resources/*
