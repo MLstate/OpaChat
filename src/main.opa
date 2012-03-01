@@ -272,7 +272,7 @@ server @async function enter_chat(user_name, client_channel) {
     name: user_name
   }
   // #Body is the default body id in Opa
-  #Body = build_page(
+  #main =
     <div id=#sidebar>
       <h4>Users online</h4>
       <div id=#user_list/>
@@ -290,7 +290,6 @@ server @async function enter_chat(user_name, client_channel) {
                x-webkit-speech="x-webkit-speech"/>
       </div>
     </div>
-  )
 }
 
 client @async function join(_) {
