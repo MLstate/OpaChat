@@ -44,9 +44,10 @@ function file_to_content(file, cb) {
 ##args(sel, cb)
 {
     $(sel).on("change", function(e) {
-        for (var f in e.target.files) {
-            var file = e.target.files[f];
-            file_to_content(file, cb);
-        }
+        $(e.target.files).each(
+	    function(key, file) {
+		file_to_content(file, cb);
+            }
+	);
     });
 }
