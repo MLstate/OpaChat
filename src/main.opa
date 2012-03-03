@@ -170,11 +170,6 @@ client @async function media_update(stats, list(media) medias) {
   })
 }
 
-client @async function send_message(broadcast, _) {
-  broadcast(Dom.get_value(#entry))
-  Dom.clear_value(#entry)
-}
-
 server function file_uploaded(user)(name, mimetype, key) {
   media = {
     source: {user:user.name},
@@ -239,6 +234,11 @@ server function init_client(user, client_channel, _) {
   message_update(compute_stats(), history)
   // Initialize OpaShare
   OpaShare.init(file_uploaded(user))
+}
+
+client @async function send_message(broadcast, _) {
+  broadcast(Dom.get_value(#entry))
+  Dom.clear_value(#entry)
 }
 
 exposed @async function enter_chat(user_name, client_channel) {
