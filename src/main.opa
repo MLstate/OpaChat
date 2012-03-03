@@ -23,6 +23,7 @@
  */
 
 import stdlib.system
+import stdlib.themes.bootstrap
 
 /** Constants **/
 
@@ -344,10 +345,6 @@ url_parser = parser {
 // Start the server
 Server.start(Server.http, [
   { resources : @static_resource_directory("resources") }, // include resources directory
-  { register : [
-      "/resources/css/bootstrap.min.css",
-      "/resources/css/bootstrap-responsive.min.css",
-      "/resources/css/style.css",
-    ] }, // include CSS in headers
+  { register : ["/resources/css/style.css"] }, // include CSS in headers
   { custom : url_parser } // URL parser
 ])
