@@ -5,7 +5,7 @@ S = @ # silent
 OPA ?= opa
 OPA-PLUGIN ?= opa-plugin-builder
 OPA-OPT ?= --parser js-like
-MINIMAL-VERSION = 1046
+MINIMAL-VERSION = 1393
 EXE = opa_chat.exe
 
 all: $(EXE)

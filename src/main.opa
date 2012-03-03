@@ -60,7 +60,6 @@ database intmap(message) /history
 
 exposed Network.network(network_msg) room = Network.cloud("room")
 private reference(intmap(user)) users = ServerReference.create(IntMap.empty)
-private launch_date = Date.now()
 
 /** Page **/
 
@@ -109,7 +108,7 @@ server function mem() {
 }
 
 server function compute_stats() {
-  uptime_duration = Date.between(launch_date, Date.now())
+  uptime_duration = Date.between(System.gmt_launch_date, Date.gmt_now())
   uptime = Date.of_duration(uptime_duration)
   uptime = Date.shift_backward(uptime, Date.to_duration(Date.milliseconds(3600000))) // 1 hour shift
   (uptime, mem())
