@@ -169,14 +169,8 @@ client @async function media_update(stats, list(media) medias) {
   })
 }
 
-exposed @async function broadcast(user, text) {
-  message = {source:user, ~text, date:Date.now()}
-  /history[?] <- message
-  Network.broadcast({~message}, room)
-}
-
-client @async function send_message(user, _) {
-  broadcast(user, Dom.get_value(#entry))
+client @async function send_message(broadcast, _) {
+  broadcast(Dom.get_value(#entry))
   Dom.clear_value(#entry)
 }
 
@@ -246,12 +240,16 @@ server function init_client(user, client_channel, _) {
   OpaShare.init(file_uploaded(user))
 }
 
-server @async function enter_chat(user_name, client_channel) {
+exposed @async function enter_chat(user_name, client_channel) {
   user = {
     id: Random.int(max_int),
     name: user_name
   }
-  // #Body is the default body id in Opa
+  broadcast = function(text) {
+    message = {source:{~user}, ~text, date:Date.now()}
+    /history[?] <- message
+    Network.broadcast({~message}, room)
+  }
   #main =
     <div id=#sidebar>
       <h4>Users online</h4>
@@ -266,7 +264,7 @@ server @async function enter_chat(user_name, client_channel) {
         <input id=#entry
                autofocus="autofocus"
                onready={function(_){Dom.give_focus(#entry)}}
-               onnewline={send_message({~user}, _)}
+               onnewline={send_message(broadcast, _)}
                x-webkit-speech="x-webkit-speech"/>
       </div>
     </div>
