@@ -33,7 +33,7 @@ NB_LAST_MSGS = 10
 /** Types **/
 
 type user = { int id, string name }
-type source = { system } or { user user }
+type source = { system } or { string user }
 type message = {
   source source,
   string text,
@@ -109,7 +109,7 @@ client @async function update_users(nb_users, users) {
 function source_to_html(source) {
   match (source) {
   case {system} : <span class="system"/>
-  case {~user} : <span class="user">{user.name}</span>
+  case {~user} : <span class="user">{user}</span>
   }
 }
 
@@ -176,7 +176,7 @@ client @async function send_message(broadcast, _) {
 
 server function file_uploaded(user)(name, mimetype, key) {
   media = {
-    source: {~user},
+    source: {user:user.name},
     ~name,
     src: "/file/{key}",
     ~mimetype,
@@ -246,7 +246,7 @@ exposed @async function enter_chat(user_name, client_channel) {
     name: user_name
   }
   broadcast = function(text) {
-    message = {source:{~user}, ~text, date:Date.now()}
+    message = {source:{user:user_name}, ~text, date:Date.now()}
     /history[?] <- message
     Network.broadcast({~message}, room)
   }
