@@ -58,29 +58,10 @@ or {stats}
 
 database intmap(message) /history
 
+/** Top level values **/
+
 exposed Network.network(network_msg) room = Network.cloud("room")
 private reference(intmap(user)) users = ServerReference.create(IntMap.empty)
-
-/** Page **/
-
-watch_button =
-  <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=watch&count=true&size=large"
-          allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
-
-fork_button =
-  <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=fork&count=true&size=large"
-          allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
-
-function build_page(content) {
-  <div id=#header>
-    <h2 class="pull-left">OpaChat</h2>
-    <div class="buttons pull-right">
-      {watch_button}
-      {fork_button}
-    </div>
-  </div>
-  <div id=#main>{content}</div>
-}
 
 /** Connection **/
 
@@ -103,15 +84,12 @@ _ = Network.observe(server_observe, room)
 
 /** Stats **/
 
-server function mem() {
-  System.get_memory_usage()/(1024*1024)
-}
-
+// Compute uptime and memory usage (MB)
 server function compute_stats() {
   uptime_duration = Date.between(System.gmt_launch_date, Date.gmt_now())
   uptime = Date.of_duration(uptime_duration)
-  uptime = Date.shift_backward(uptime, Date.to_duration(Date.milliseconds(3600000))) // 1 hour shift
-  (uptime, mem())
+  mem = System.get_memory_usage()/(1024*1024)
+  (uptime, mem)
 }
 
 client @async function update_stats((uptime, mem)) {
@@ -300,6 +278,27 @@ client @async function join(_) {
   name = Dom.get_value(#name)
   client_channel = Session.make_callback(ignore)
   enter_chat(name, client_channel)
+}
+
+/** Server **/
+
+watch_button =
+  <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=watch&count=true&size=large"
+          allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
+
+fork_button =
+  <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=fork&count=true&size=large"
+          allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
+
+function build_page(content) {
+  <div id=#header>
+    <h2 class="pull-left">OpaChat</h2>
+    <div class="buttons pull-right">
+      {watch_button}
+      {fork_button}
+    </div>
+  </div>
+  <div id=#main>{content}</div>
 }
 
 // Page headers
