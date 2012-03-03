@@ -1,5 +1,5 @@
 A simple, one-room, scalable real-time web chat, with file sharing - built in Opa.
-=========================================
+==================================================================================
 
 1) Requirements
 ---------------
