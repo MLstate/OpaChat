@@ -86,15 +86,14 @@ _ = Network.observe(server_observe, room)
 
 // Compute uptime and memory usage (MB)
 server function compute_stats() {
-  uptime_duration = Date.between(System.gmt_launch_date, Date.gmt_now())
-  uptime = Date.of_duration(uptime_duration)
+  uptime = Date.between(System.gmt_launch_date, Date.now_gmt())
   mem = System.get_memory_usage()/(1024*1024)
   (uptime, mem)
 }
 
 client @async function update_stats((uptime, mem)) {
-  #uptime = <>Uptime: {Date.to_string_time_only(uptime)}</>
-  #memory = <>Memory: {mem} Mo</>
+  #uptime = <>Uptime: {Duration.to_formatted_string(Duration.long_time_printer, uptime)}</>
+  #memory = <>Memory: {mem} MB</>
 }
 
 /** Users **/
