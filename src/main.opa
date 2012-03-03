@@ -105,6 +105,7 @@ client @async function update_users(nb_users, users) {
 
 /** Conversation **/
 
+// converts a source into HTML
 function source_to_html(source) {
   match (source) {
   case {system} : <span class="system"/>
@@ -112,62 +113,60 @@ function source_to_html(source) {
   }
 }
 
-client @async function message_update(stats, list(message) messages) {
+private client function generic_update(stats, elements, printer) {
   update_stats(stats)
-  List.iter(function(message) {
-    date = Date.to_formatted_string(Date.default_printer, message.date)
-    time = Date.to_string_time_only(message.date)
+  List.iter(function(element) {
+    date = Date.to_formatted_string(Date.default_printer, element.date)
+    time = Date.to_string_time_only(element.date)
     line = <div class="line">
               <span class="date" title="{date}">{time}</span>
-              { source_to_html(message.source) }
-              <span class="message">{message.text}</span>
+              {printer(element)}
            </div>
     #conversation =+ line
-  }, messages)
+  }, elements)
   Dom.scroll_to_bottom(#conversation)
 }
 
+client @async function message_update(stats, list(message) messages) {
+  generic_update(stats, messages, function(message) {
+    source_to_html(message.source) <+>
+    <span class="message">{message.text}</span>
+  })
+}
+
 client @async function media_update(stats, list(media) medias) {
-  update_stats(stats)
-  List.iter(function(media) {
-    date = Date.to_formatted_string(Date.default_printer, media.date)
-    time = Date.to_string_time_only(media.date)
-    media_parser = parser {
-      case "image/" .*: {image}
-      case "audio/" .*: {audio}
-      case "video/" .*: {video}
-    }
-    line = <div class="line">
-              <span class="date" title="{date}">{time}</span>
-              { source_to_html(media.source) }
-              { match (Parser.try_parse(media_parser, media.mimetype)) {
-                case {some:{image}}:
-                  <img src="{media.src}" alt="{media.name}"/>
-                case {some:{audio}}:
-                  <audio src="{media.src}"
-                         controls="controls"
-                         type="{media.mimetype}"
-                         preload="auto">
-                    Your browser does not support the audio tag!
-                  </audio>
-                case {some:{video}}:
-                  <video src="{media.src}"
-                         controls="controls"
-                         preload="auto"
-                         type="{media.name}">
-                    Your browser does not support the video tag!
-                  </video>
-                default:
-                  <span class="media {media.mimetype}"> is sharing a file :
-                    <a target="_blank" href="{media.src}"
-                       draggable="true"
-                       data-downloadurl="{media.mimetype}:{media.name}:{media.src}">{media.name}</a>
-                  </span>
-                } }
-           </div>
-    #conversation =+ line
-  }, medias)
-  Dom.scroll_to_bottom(#conversation)
+  media_parser = parser {
+    case "image/" .*: {image}
+    case "audio/" .*: {audio}
+    case "video/" .*: {video}
+  }
+  generic_update(stats, medias, function(media) {
+    source_to_html(media.source) <+>
+    ( match (Parser.try_parse(media_parser, media.mimetype)) {
+      case {some:{image}}:
+        <img src="{media.src}" alt="{media.name}"/>
+      case {some:{audio}}:
+        <audio src="{media.src}"
+               controls="controls"
+               type="{media.mimetype}"
+               preload="auto">
+          Your browser does not support the audio tag!
+        </audio>
+      case {some:{video}}:
+        <video src="{media.src}"
+               controls="controls"
+               preload="auto"
+               type="{media.name}">
+          Your browser does not support the video tag!
+        </video>
+      default:
+        <span class="media {media.mimetype}"> is sharing a file :
+          <a target="_blank" href="{media.src}"
+             draggable="true"
+             data-downloadurl="{media.mimetype}:{media.name}:{media.src}">{media.name}</a>
+        </span>
+      } )
+  })
 }
 
 exposed @async function broadcast(user, text) {
