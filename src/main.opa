@@ -346,5 +346,6 @@ url_parser = parser {
 Server.start(Server.http, [
   { resources : @static_resource_directory("resources") }, // include resources directory
   { register : ["/resources/css/style.css"] }, // include CSS in headers
+  { favicon : [{format:{gif}, path:"/resources/img/favicon.gif"}] }, // include favicon in headers
   { custom : url_parser } // URL parser
 ])
