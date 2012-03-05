@@ -237,7 +237,7 @@ server function init_client(user, client_channel, _) {
 }
 
 client @async function send_message(broadcast, _) {
-  broadcast(Dom.get_value(#entry))
+  void broadcast(Dom.get_value(#entry))
   Dom.clear_value(#entry)
 }
 
@@ -246,7 +246,7 @@ exposed @async function enter_chat(user_name, client_channel) {
     id: Random.int(max_int),
     name: user_name
   }
-  broadcast = function(text) {
+  function broadcast(text) {
     message = {source:{user:user_name}, ~text, date:Date.now()}
     /history[?] <- message
     Network.broadcast({~message}, room)
