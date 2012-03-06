@@ -3,7 +3,8 @@ import file
 
 /** Sharing module **/
 
-DROP_TEXT = "Drop files here to share !"
+MAX_SIZE = 5
+DROP_TEXT = "Drop files here to share ! [< {MAX_SIZE}MB]"
 TOO_BIG_TEXT = "File too big ! Try a smaller file..."
 
 type OpaShare.file = {
@@ -32,7 +33,7 @@ module OpaShare {
   }
 
   client function handle_file_selection(callback)(string name, string mimetype, int size, string content) {
-    if (size > 20*1024*1024) {
+    if (size > MAX_SIZE*1024*1024) {
       #share = <>{TOO_BIG_TEXT}</>
       void
     } else {

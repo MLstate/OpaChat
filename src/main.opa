@@ -161,7 +161,7 @@ client @async function media_update(stats, list(media) medias) {
           Your browser does not support the video tag!
         </video>
       default:
-        <span class="media {media.mimetype}"> is sharing a file :
+        <span class="media {media.mimetype}">is sharing a file :
           <a target="_blank" href="{media.src}"
              draggable="true"
              data-downloadurl="{media.mimetype}:{media.name}:{media.src}">{media.name}</a>
