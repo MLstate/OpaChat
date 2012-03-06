@@ -4,7 +4,7 @@ import file
 /** Sharing module **/
 
 MAX_SIZE = 5
-DROP_TEXT = "Drop files here to share ! [< {MAX_SIZE}MB]"
+DROP_TEXT = "Drop files here to share !"
 TOO_BIG_TEXT = "File too big ! Try a smaller file..."
 
 type OpaShare.file = {
