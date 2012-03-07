@@ -63,6 +63,7 @@ database intmap(message) /history
 
 exposed Network.network(network_msg) room = Network.cloud("room")
 private reference(intmap(user)) users = ServerReference.create(IntMap.empty)
+private launch_date = Date.now_gmt()
 
 /** Connection **/
 
@@ -87,7 +88,7 @@ _ = Network.observe(server_observe, room)
 
 // Compute uptime and memory usage (MB)
 server function compute_stats() {
-  uptime = Date.between(System.gmt_launch_date, Date.now_gmt())
+  uptime = Date.between(launch_date, Date.now_gmt())
   mem = System.get_memory_usage()/(1024*1024)
   (uptime, mem)
 }
@@ -345,6 +346,5 @@ url_parser = parser {
 Server.start(Server.http, [
   { resources : @static_resource_directory("resources") }, // include resources directory
   { register : ["/resources/css/style.css"] }, // include CSS in headers
-  { register : {favicon:[{format:{gif}, path:"/resources/img/favicon.gif"}]} }, // include favicon in headers
   { custom : url_parser } // URL parser
 ])
