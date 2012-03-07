@@ -99,8 +99,8 @@ client @async function update_stats((uptime, mem)) {
 
 /** Users **/
 
-client @async function update_users(nb_users, users) {
-  #users = <>Users: {nb_users}</>
+client @async function update_users(users) {
+  #users = <>Users: {List.length(users)}</>
   #user_list = <ul>{users}</ul>
 }
 
@@ -207,11 +207,10 @@ server function client_observe(msg) {
             |> IntMap.To.val_list(_)
             |> List.sort_by(function(u){u.name}, _)
     users_html_list =
-      List.fold(function(user, acc) {
+      List.map(function(user) {
         <li>{user.name}</li>
-        <+> acc
-      }, users, <></>)
-    update_users(List.length(users), users_html_list)
+      }, users)
+    update_users(users_html_list)
   default : void
   }
 }
