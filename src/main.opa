@@ -170,7 +170,7 @@ client @async function media_update(stats, list(media) medias) {
   })
 }
 
-server function file_uploaded(user)(name, mimetype, key) {
+function file_uploaded(user)(name, mimetype, key) {
   media = {
     source: {user:user.name},
     ~name,
@@ -235,7 +235,7 @@ server function init_client(user, client_channel, _) {
   OpaShare.init(file_uploaded(user))
 }
 
-client @async function send_message(broadcast, _) {
+@async function send_message(broadcast, _) {
   void broadcast(Dom.get_value(#entry))
   Dom.clear_value(#entry)
 }
@@ -270,7 +270,7 @@ exposed @async function enter_chat(user_name, client_channel) {
     </div>
 }
 
-client @async function join(_) {
+@async function join(_) {
   name = Dom.get_value(#name)
   client_channel = Session.make_callback(ignore)
   enter_chat(name, client_channel)
@@ -308,7 +308,7 @@ headers =
   <meta name="viewport" content="width=device-width,initial-scale=1"></meta>
 
 // Start page
-server function start() {
+function start() {
   page = build_page(
     <h4>A real-time web chat built in Opa.</h4>
     <div id=#login class="form-inline">
