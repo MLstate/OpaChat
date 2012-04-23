@@ -67,7 +67,7 @@ private launch_date = Date.now_gmt()
 
 /** Connection **/
 
-server function server_observe(message) {
+function server_observe(message) {
   match (message) {
   case {connection:(user, client_channel)} :
     ServerReference.update(users, IntMap.add(user.id, user, _))
@@ -87,7 +87,7 @@ _ = Network.observe(server_observe, room)
 /** Stats **/
 
 // Compute uptime and memory usage (MB)
-server function compute_stats() {
+function compute_stats() {
   uptime = Date.between(launch_date, Date.now_gmt())
   mem = System.get_memory_usage()/(1024*1024)
   (uptime, mem)
@@ -182,7 +182,7 @@ function file_uploaded(user)(name, mimetype, key) {
   Network.broadcast({~media}, room)
 }
 
-server function client_observe(msg) {
+function client_observe(msg) {
   match (msg) {
   case {~message} :
     message_update(compute_stats(), [message])
@@ -217,7 +217,7 @@ server function client_observe(msg) {
 }
 
 // Init the client from the server
-server function init_client(user, client_channel, _) {
+function init_client(user, client_channel, _) {
   // Observe client
   obs = Network.observe(client_observe, room)
   Network.broadcast({connection:(user, client_channel)}, room)
@@ -243,7 +243,7 @@ server function init_client(user, client_channel, _) {
 
 exposed @async function enter_chat(user_name, client_channel) {
   user = {
-    id: Random.int(max_int),
+    id: Random.int(Limits.max_int),
     name: user_name
   }
   function broadcast(text) {
