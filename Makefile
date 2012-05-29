@@ -3,7 +3,7 @@
 OPA ?= opa
 OPA_PLUGIN ?= opa-plugin-builder
 OPA_OPT ?= --parser js-like
-MINIMAL_VERSION = 1356
+MINIMAL_VERSION = 1588
 EXE = opa_chat.exe
 
 all: $(EXE)
