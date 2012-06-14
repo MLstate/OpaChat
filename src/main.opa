@@ -57,7 +57,9 @@ or {stats}
 
 /** Database **/
 
-database intmap(message) /history
+database opa_chat {
+  message /history[{date}]
+}
 
 /** Top level values **/
 
@@ -228,9 +230,8 @@ function init_client(user, client_channel, _) {
     none
   })
   // Send NB_LAST_MSGS messages
-  history_list = IntMap.To.val_list(/history)
-  len = List.length(history_list)
-  history = List.drop(len-NB_LAST_MSGS, history_list)
+  iterator = DbSet.iterator(/opa_chat/history[limit NB_LAST_MSGS; order -date])
+  history = Iter.to_list(iterator) |> List.rev(_)
   message_update(compute_stats(), history)
   // Initialize OpaShare
   OpaShare.init(file_uploaded(user))
@@ -248,7 +249,7 @@ exposed @async function enter_chat(user_name, client_channel) {
   }
   function broadcast(text) {
     message = {source:{user:user_name}, ~text, date:Date.now()}
-    /history[?] <- message
+    /opa_chat/history[date==message.date] <- message
     Network.broadcast({~message}, room)
   }
   #main =

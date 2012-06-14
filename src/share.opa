@@ -9,6 +9,7 @@ DROP_TEXT = "Drop files here to share !"
 TOO_BIG_TEXT = "File too big ! Try a smaller file..."
 
 type OpaShare.file = {
+  int id, // file ID
   string name, // file name
   int size, // file size
   binary content, // file content
@@ -19,7 +20,9 @@ type OpaShare.file = {
   option(string) password, // file password
 }
 
-database intmap(OpaShare.file) /files
+database opa_chat {
+  OpaShare.file /files[{id}]
+}
 
 module OpaShare {
 
@@ -44,12 +47,17 @@ module OpaShare {
     }
   }
 
+  private function fresh_key() {
+    Date.in_milliseconds(Date.now_gmt())
+  }
+
   exposed function process_upload(string name, string mimetype, int size, string content, callback) {
     decoded_content =
       offset = Option.get(String.index("base64,", content)) + 7
       data = String.sub(offset, String.length(content)-offset, content)
       Crypto.Base64.decode2(data)
     os_file = {
+      id: fresh_key(),
       ~name,
       ~size,
       content: decoded_content,
@@ -59,9 +67,8 @@ module OpaShare {
       count: 0,
       password: none,
     }
-    key = Db3.fresh_key(@/files)
-    /files[key] <- os_file
-    callback(name, mimetype, key)
+    /opa_chat/files[id==os_file.id] <- os_file
+    callback(name, mimetype, os_file.id)
   }
 
   function html() {
@@ -75,7 +82,7 @@ module OpaShare {
   }
 
   function get(key) {
-    ?/files[key]
+    ?/opa_chat/files[{id:key}]
   }
 
 }
