@@ -2,7 +2,8 @@
 
 OPA ?= opa
 OPA_PLUGIN ?= opa-plugin-builder
-OPA_OPT ?= --parser js-like --database mongo
+OPA_OPT ?= --parser js-like
+RUN_OPT ?= --db-remote:opa_chat localhost:27017 --db-remote:opa_share localhost:27017
 MINIMAL_VERSION = 1900
 EXE = opa_chat.exe
 

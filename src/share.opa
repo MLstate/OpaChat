@@ -19,7 +19,7 @@ type OpaShare.file = {
   option(string) password, // file password
 }
 
-database opa_chat {
+database opa_share {
   OpaShare.file /files[{id}]
 }
 
@@ -66,7 +66,7 @@ module OpaShare {
       count: 0,
       password: none,
     }
-    /opa_chat/files[id==os_file.id] <- os_file
+    /opa_share/files[id==os_file.id] <- os_file
     callback(name, mimetype, os_file.id)
   }
 
@@ -81,7 +81,7 @@ module OpaShare {
   }
 
   function get(key) {
-    ?/opa_chat/files[{id:key}]
+    ?/opa_share/files[{id:key}]
   }
 
 }
