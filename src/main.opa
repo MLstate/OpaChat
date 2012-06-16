@@ -182,7 +182,7 @@ function file_uploaded(user)(name, mimetype, key) {
   Network.broadcast({~media}, room)
 }
 
-function client_observe(msg) {
+function observe_client(msg) {
   match (msg) {
   case {~message} :
     message_update(compute_stats(), [message])
@@ -219,7 +219,7 @@ function client_observe(msg) {
 // Init the client from the server
 function init_client(user, client_channel, _) {
   // Observe client
-  obs = Network.observe(client_observe, room)
+  obs = Network.observe(observe_client, room)
   Network.broadcast({connection:(user, client_channel)}, room)
   // Observe disconnection
   Dom.bind_beforeunload_confirmation(function(_) {
@@ -345,6 +345,6 @@ url_parser = parser {
 // Start the server
 Server.start(Server.http, [
   { resources : @static_resource_directory("resources") }, // include resources directory
-  { register : { css:["/resources/css/style.css"] } }, // include CSS in headers
+  { register : {css:["/resources/css/style.css"]} }, // include CSS in headers
   { custom : url_parser } // URL parser
 ])

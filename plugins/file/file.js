@@ -8,8 +8,8 @@ function file_to_content(file, cb) {
     if (window.FileReader) {
 	var reader = new FileReader();
 	reader.onload = function(e) {
-            // if (file.size > 10*1024*1024) return;
-            cb(file.name, file.type, file.size, e.target.result);
+        // if (file.size > 10*1024*1024) return;
+        cb(file.name, file.type, file.size, e.target.result);
 	};
 	reader.readAsDataURL(file);
     } else {
@@ -20,7 +20,7 @@ function file_to_content(file, cb) {
 	http.open('POST', '/upload');
 	http.send(form);
     }
-};
+}
 
 ##register hook_file_drop : string, (-> void), (string, string, int, string -> void) -> void
 ##args(sel, waiting_cb, cb)
@@ -29,13 +29,13 @@ function file_to_content(file, cb) {
         e.stopPropagation();
         e.preventDefault();
         if (!$(e.target).hasClass("dropzone") &&
-	    !$(e.target).parent().hasClass("dropzone")) return;
+            !$(e.target).parent().hasClass("dropzone")) return;
         waiting_cb();
         var oe = e.originalEvent;
         $(oe.dataTransfer.files).each(
-	    function(key, file) {
-		file_to_content(file, cb);
-	    }
+        function(key, file) {
+            file_to_content(file, cb);
+        }
         );
     }).on("dragenter, dragexit, dragover", noop_handler);
 }
