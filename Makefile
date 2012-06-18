@@ -17,7 +17,7 @@ $(EXE): plugins src/*.opa resources/*
 	$(OPA) $(OPA_OPT) --minimal-version $(MINIMAL_VERSION) *.opp src/*.opa -o $(EXE)
 
 run: all
-	./$(EXE) $(RUN_OPT) || true ## prevent ugly make error 130 :) ##
+	node $(EXE) $(RUN_OPT) || true ## prevent ugly make error 130 :) ##
 
 clean:
 	rm -Rf *.opx* *.opp*
