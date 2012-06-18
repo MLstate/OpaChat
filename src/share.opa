@@ -54,7 +54,7 @@ module OpaShare {
     decoded_content =
       offset = Option.get(String.index("base64,", content)) + 7
       data = String.sub(offset, String.length(content)-offset, content)
-      Crypto.Base64.decode2(data)
+      Crypto.Base64.decode2(data) |> binary_of_string
     os_file = {
       id: fresh_key(),
       ~name,
