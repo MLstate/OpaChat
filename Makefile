@@ -22,3 +22,4 @@ run: all
 clean:
 	rm -Rf *.opx* *.opp*
 	rm -Rf *.exe _build _tracks *.log **/#*#
+	rm -Rf opa_chat_depends opa_chat.js
