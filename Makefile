@@ -12,7 +12,7 @@ plugins: plugins/file/file.js
 	$(OPA) $(OPA_OPT) -c plugins/file/file.opa plugins/file/file.js
 
 $(EXE): plugins src/*.opa resources/*
-	$(OPA) $(OPA_OPT) --minimal-version $(MINIMAL_VERSION) *.opp src/*.opa -o $(EXE)
+	$(OPA) $(OPA_OPT) --minimal-version $(MINIMAL_VERSION) src/*.opa -o $(EXE)
 
 run: all
 	./$(EXE) $(RUN_OPT) || true ## prevent ugly make error 130 :) ##
