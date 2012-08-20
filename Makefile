@@ -8,11 +8,9 @@ EXE = opa_chat.js
 
 all: $(EXE)
 
-plugins: plugins/file/file.js
-	$(OPA) $(OPA_OPT) -c plugins/file/file.opa plugins/file/file.js
-
-$(EXE): plugins src/*.opa resources/*
-	$(OPA) $(OPA_OPT) --minimal-version $(MINIMAL_VERSION) src/*.opa -o $(EXE)
+$(EXE): plugins/file/file.opa plugins/file/file.js src/*.opa resources/*
+	$(OPA) $(OPA_OPT) --minimal-version $(MINIMAL_VERSION) src/*.opa \
+	plugins/file/file.opa plugins/file/file.js -o $(EXE)
 
 run: all
 	./$(EXE) $(RUN_OPT) || true ## prevent ugly make error 130 :) ##
