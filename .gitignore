@@ -5,4 +5,7 @@ _build
 _tracks
 *.opp
 *.opx
+*.opx.broken
 *.log
+opa_chat.js
+opa_chat_depends
