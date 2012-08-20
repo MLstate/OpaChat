@@ -281,11 +281,11 @@ exposed @async function enter_chat(user_name, client_channel) {
 /** Server **/
 
 watch_button =
-  <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=watch&count=true&size=large"
+  <iframe src="http://ghbtns.com/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=watch&count=true&size=large"
           allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
 
 fork_button =
-  <iframe src="http://markdotto.github.com/github-buttons/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=fork&count=true&size=large"
+  <iframe src="http://ghbtns.com/github-btn.html?user={GITHUB_USER}&repo={GITHUB_REPO}&type=fork&count=true&size=large"
           allowtransparency="true" frameborder="0" scrolling="0" width="146px" height="30px"></iframe>
 
 function build_page(content) {
