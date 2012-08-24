@@ -1,9 +1,9 @@
 .PHONY: all clean run plugins $(EXE)
 
 OPA ?= opa
-OPA_OPT ?= --parser js-like --back-end qmljs
+OPA_OPT ?=
 RUN_OPT ?= --db-remote:opa_chat localhost:27017 --db-remote:opa_share localhost:27017
-MINIMAL_VERSION = 1900
+MINIMAL_VERSION = 2988
 EXE = opa_chat.js
 
 all: $(EXE)
