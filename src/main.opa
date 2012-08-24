@@ -315,6 +315,7 @@ function start() {
     <h4>A real-time web chat built in Opa.</h4>
     <div id=#login class="form-inline">
       <input id=#name
+             type="text"
              placeholder="Name"
              autofocus="autofocus"
              onready={function(_){Dom.give_focus(#name)}}
