@@ -52,9 +52,13 @@ module OpaShare {
 
   exposed function process_upload(string name, string mimetype, int size, string content, callback) {
     decoded_content =
-      offset = Option.get(String.index("base64,", content)) + 7
-      data = String.sub(offset, String.length(content)-offset, content)
-      Crypto.Base64.decode(data) |> binary_of_string
+      match (String.index("base64,", content)) {
+      case {none}: binary_of_string(content)
+      case {some:i}:
+        offset = i + 7
+        data = String.sub(offset, String.length(content)-offset, content)
+        Crypto.Base64.decode(data) |> binary_of_string
+      }
     os_file = {
       id: fresh_key(),
       ~name,
