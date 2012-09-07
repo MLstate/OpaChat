@@ -57,7 +57,7 @@ module OpaShare {
       case {some:i}:
         offset = i + 7
         data = String.sub(offset, String.length(content)-offset, content)
-        Crypto.Base64.decode(data) |> binary_of_string
+        Crypto.Base64.decode(data)
       }
     os_file = {
       id: fresh_key(),
