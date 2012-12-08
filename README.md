@@ -3,7 +3,7 @@ A simple, one-room, scalable real-time web chat, with file sharing - built in Op
 
 1) Requirements
 ---------------
-[Opa](https://opalang.org/get.xmlt) build > 1395
+[Opa](https://opalang.org/get.xmlt) build > 2988
 
 2) Build
 --------
