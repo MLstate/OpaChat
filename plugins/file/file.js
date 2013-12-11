@@ -22,9 +22,9 @@ function file_to_content(file, cb) {
     }
 }
 
-##register hook_file_drop : string, (-> void), (string, string, int, string -> void) -> void
-##args(sel, waiting_cb, cb)
-{
+/** @register { string, (-> void), (string, string, int, string -> void) -> void }
+*/
+function hook_file_drop(sel, waiting_cb, cb) {
     $(document).on("drop", function(e) {
         e.stopPropagation();
         e.preventDefault();
@@ -40,14 +40,14 @@ function file_to_content(file, cb) {
     }).on("dragenter, dragexit, dragover", noop_handler);
 }
 
-##register hook_file_chooser : string, (string, string, int, string -> void) -> void
-##args(sel, cb)
-{
+/** @register { string, (string, string, int, string -> void) -> void }
+*/
+function hook_file_chooser(sel, cb) {
     $(sel).on("change", function(e) {
         $(e.target.files).each(
 	    function(key, file) {
 		file_to_content(file, cb);
-            }
+    }
 	);
     });
 }
