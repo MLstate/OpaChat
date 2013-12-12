@@ -8,7 +8,7 @@ import stdlib.themes.bootstrap
 
 /** Constants **/
 
-GITHUB_USER = "Aqua-Ye"
+GITHUB_USER = "MLstate"
 GITHUB_REPO = "OpaChat"
 NB_LAST_MSGS = 10
 
