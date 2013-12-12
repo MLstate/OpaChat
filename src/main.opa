@@ -239,8 +239,7 @@ exposed @async function enter_chat(user_name, client_channel) {
       <div id=#user_list/>
       {OpaShare.html()}
     </div>
-    <div id=#content
-         onready={init_client(user, client_channel, _)}>
+    <div id=#content onready={init_client(user, client_channel, _)}>
       <div id=#stats><div id=#users/><div id=#uptime/><div id=#memory/></div>
       <div id=#conversation/>
       <div id=#chatbar>

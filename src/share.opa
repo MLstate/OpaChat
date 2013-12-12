@@ -4,8 +4,8 @@ import file
 /** Sharing module **/
 
 MAX_SIZE = 5
-DROP_TEXT = "Drop files here to share !"
-TOO_BIG_TEXT = "File too big ! Try a smaller file..."
+DROP_TEXT = "Drop files here to share them"
+LIMIT_TEXT = "File size limit exceeded! ({MAX_SIZE}Mb)"
 
 type OpaShare.file = {
   int id, // file ID
@@ -37,7 +37,7 @@ module OpaShare {
 
   client function handle_file_selection(callback)(string name, string mimetype, int size, string content) {
     if (size > MAX_SIZE*1024*1024) {
-      #share = <>{TOO_BIG_TEXT}</>
+      #share = <>{LIMIT_TEXT}</>
       void
     } else {
       #share = <>{DROP_TEXT}</>
