@@ -15,13 +15,18 @@ or
 
 Open [http://localhost:8080](http://localhost:8080)
 
+## Bugs (or missing features that can be perceived as bugs)
+
+- Files are not kept in history
+
 ## Roadmap
 
 - Update running time in real-time
-- Scan attachments for vulnerabilites (AV proxy?)
+- Scan attachments for vulnerabilities (AV proxy?)
 - Multiple chat rooms
 - Multiple servers, possibly P2P?
 - Ban users who publish messages contained banned keywords
 - Ban users who publish too many messages in a row
 - Admin users who have banning rights
 - File size limit: Detect both client side (to prevent legitimate users to upload the file for nothing) and server side (to prevent forged clients)
+- Upload progress bar
