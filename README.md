@@ -1,24 +1,26 @@
-A simple, one-room, scalable real-time web chat, with file sharing - built in Opa.
-==================================================================================
+# Real-time single-room chat with file sharing, built in Opa.
 
-1) Requirements
----------------
+## Requirements
+
 [Opa](https://opalang.org/get.xmlt) build > 4051
 
-2) Build
---------
-$ `make`
+## Build and run
 
-3) Launch
----------
-$ `./opa_chat.exe`
+`make`
+`./opa_chat.js`
 
-2+3) Build and run :)
----------------------
+or
 
-$ `make run`
+`make run`
 
-4) Admire
----------
+Open [http://localhost:8080](http://localhost:8080)
 
-[http://localhost:8080](http://localhost:8080)
+## Roadmap
+
+- Update running time in real-time
+- Scan attachments for vulnerabilites (AV proxy?)
+- Multiple chat rooms
+- Multiple servers, possibly P2P?
+- Ban users who publish messages contained banned keywords
+- Ban users who publish too many messages in a row
+- Admin users who have banning rights
