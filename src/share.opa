@@ -5,7 +5,7 @@ import file
 
 MAX_SIZE = 5
 DROP_TEXT = "Drop files here to share them"
-LIMIT_TEXT = "File size limit exceeded! ({MAX_SIZE}Mb)"
+LIMIT_TEXT = "File size limit exceeded! ({MAX_SIZE} Mb)"
 
 type OpaShare.file = {
   int id, // file ID

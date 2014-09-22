@@ -1,5 +1,5 @@
 /*  Copyright © 2011-2013 MLstate
-    
+
     This code is covered by the MIT license. See the LICENSE file.
 */
 
@@ -14,12 +14,23 @@ NB_LAST_MSGS = 10
 
 /** Types **/
 
+default_room = "main"
+
+type Room.key = string // FIXME: abstract key
+type Room.t = {
+  Room.key key,
+  string name,
+  string password,
+  list(int) users
+}
+
 type user = { int id, string name }
 type source = { system } or { string user }
 type message = {
   source source,
   string text,
   Date.date date,
+  Room.key room
 }
 type media = {
   source source,
@@ -40,6 +51,7 @@ or {stats}
 
 database opa_chat {
   message /history[{date}]
+  Room.t /root[{key}]
 }
 
 /** Top level values **/
@@ -176,6 +188,7 @@ function observe_client(msg) {
       source: {system},
       text : "{user.name} joined the room",
       date : Date.now(),
+      room: default_room
     }
     message_update(compute_stats(), [message])
   case {disconnection:user} :
@@ -183,6 +196,7 @@ function observe_client(msg) {
       source: {system},
       text : "{user.name} left the room",
       date : Date.now(),
+      room: default_room
     }
     message_update(compute_stats(), [message])
   case {stats} :
@@ -229,7 +243,7 @@ exposed @async function enter_chat(user_name, client_channel) {
     name: user_name
   }
   function broadcast(text) {
-    message = {source:{user:user_name}, ~text, date:Date.now()}
+    message = {source:{user:user_name}, ~text, date:Date.now(), room: default_room}
     /opa_chat/history[date==message.date] <- message
     Network.broadcast({~message}, room)
   }
