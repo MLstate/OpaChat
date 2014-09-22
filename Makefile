@@ -12,6 +12,9 @@ $(EXE): plugins/file/file.opa plugins/file/file.js src/*.opa resources/*
 	$(OPA) $(OPA_OPT) --minimal-version $(MINIMAL_VERSION) src/*.opa \
 	plugins/file/file.opa plugins/file/file.js -o $(EXE)
 
+release:
+	zip -r chat.zip _build file.opx opa_chat.js
+
 run: all
 	./$(EXE) $(RUN_OPT) || true ## prevent ugly make error 130 :) ##
 
